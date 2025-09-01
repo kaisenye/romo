@@ -45,15 +45,16 @@ const SettingsPage = () => {
               </div>
               {userPlan === 'Basic' && (
                 <Button size="sm" variant="primary">
-                  Upgrade to Pro
+                  Agent Mode Coming Soon!
                 </Button>
               )}
             </div>
           </div>
         </section>
 
-        {/* Custom Instructions */}
-        <section>
+        {/* TODO: Add back in when we have a way to handle the keys */}
+        {/* MVP: Agent mode instructions temporarily commented out */}
+        <section className="hidden">
           <div className="flex items-center space-x-2 mb-4">
             <Settings className="w-5 h-5 text-neutral-400" />
             <h2 className="text-base font-semibold text-neutral-100">Agent Mode Instructions</h2>
@@ -82,7 +83,8 @@ const SettingsPage = () => {
         </section>
 
         {/* API Keys */}
-        <section>
+        {/* TODO: Add back in when we have a way to handle the keys */}
+        <section className="hidden">
           <div className="flex items-center space-x-2 mb-4">
             <Key className="w-5 h-5 text-neutral-400" />
             <h2 className="text-base font-semibold text-neutral-100">Remote LLM Services</h2>

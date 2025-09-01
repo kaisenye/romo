@@ -63,7 +63,7 @@ const Home = () => {
     <div className="flex-1 px-6 pt-6 pb-16 overflow-y-auto">
       {/* Header Stats */}
       <div className="mb-8">
-        <h1 className="text-xl font-bold text-neutral-100 mb-2">Welcome back, User</h1>
+        <h1 className="text-lg font-bold text-neutral-100 mb-2">Welcome back, User</h1>
         <div className="flex items-center space-x-6 text-xs text-neutral-400">
           <div className="flex items-center space-x-1">
             <Zap className="w-4 h-4 text-orange-400" />
@@ -98,6 +98,7 @@ const Home = () => {
             </div>
             <span className="text-lg font-semibold text-neutral-100">{totalWords}</span>
           </div>
+          {/* TODO: MVP: Agent mode stats temporarily commented out - restore for full release
           <div className="bg-neutral-800 rounded-lg p-4 border border-neutral-700">
             <div className="flex items-center space-x-2 mb-1">
               <Zap className="w-4 h-4 text-orange-400" />
@@ -105,6 +106,19 @@ const Home = () => {
             </div>
             <span className="text-lg font-semibold text-neutral-100">
               {dictationHistory.filter((item) => item.isAgentMode).length}
+            </span>
+          </div>
+          */}
+          <div className="bg-neutral-800 rounded-lg p-4 border border-neutral-700">
+            <div className="flex items-center space-x-2 mb-1">
+              <Clock className="w-4 h-4 text-purple-400" />
+              <span className="text-xs text-neutral-400">Avg Duration</span>
+            </div>
+            <span className="text-lg font-semibold text-neutral-100">
+              {Math.round(
+                dictationHistory.reduce((sum, item) => sum + parseInt(item.duration), 0) / dictationHistory.length
+              )}
+              s
             </span>
           </div>
         </div>
@@ -123,11 +137,13 @@ const Home = () => {
                 <div className="flex items-center space-x-2">
                   <Clock className="w-4 h-4 text-neutral-500" />
                   <span className="text-xs text-neutral-400">{formatTime(item.timestamp)}</span>
+                  {/* TODO: MVP: Agent mode badge temporarily commented out - restore for full release
                   {item.isAgentMode && (
                     <span className="px-2 py-0.5 bg-blue-900/30 text-blue-300 text-[10px] rounded-lg border border-blue-800">
                       Agent Mode
                     </span>
                   )}
+                  */}
                 </div>
                 <div className="flex items-center space-x-3 text-xs text-neutral-500">
                   <span>{item.wordCount} words</span>

@@ -24,6 +24,7 @@ const Dashboard = ({ onClose }) => {
           {/* Left margin for traffic lights */}
           <div className="flex items-center space-x-4">
             <span className="font-semibold text-base text-neutral-100">romo</span>
+            {/* TODO: Add back in when we have Pro Plan */}
             {/* <span className="flex items-center px-2 py-1 bg-neutral-700 text-neutral-50 text-[10px] rounded-lg">
               {userPlan}
             </span> */}
@@ -34,7 +35,7 @@ const Dashboard = ({ onClose }) => {
       {/* Sidebar */}
       <div className="w-48 bg-neutral-800 border-r border-neutral-700 px-4 py-6" style={{ paddingTop: '65px' }}>
         <nav className="space-y-2 text-xs">
-          <div 
+          <div
             onClick={() => setCurrentPage('home')}
             className={`flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-neutral-600 cursor-pointer transition-colors ${
               currentPage === 'home' ? 'bg-neutral-700 text-neutral-200' : 'text-neutral-400 hover:text-neutral-200'
@@ -43,7 +44,7 @@ const Dashboard = ({ onClose }) => {
             <LayoutDashboard className="w-4 h-4" />
             <span className="font-medium flex items-center">Home</span>
           </div>
-          <div 
+          <div
             onClick={() => setCurrentPage('settings')}
             className={`flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-neutral-600 cursor-pointer transition-colors ${
               currentPage === 'settings' ? 'bg-neutral-700 text-neutral-200' : 'text-neutral-400 hover:text-neutral-200'
@@ -54,6 +55,7 @@ const Dashboard = ({ onClose }) => {
           </div>
         </nav>
 
+        {/* TODO: MVP: Pro upgrade prompt temporarily commented out - restore for full release
         <div className="mt-auto pt-8">
           <div className="bg-neutral-700 rounded-lg p-4 border border-neutral-600">
             <h3 className="font-semibold text-sm mb-2 text-neutral-100">Try Pro</h3>
@@ -63,6 +65,7 @@ const Dashboard = ({ onClose }) => {
             </Button>
           </div>
         </div>
+        */}
       </div>
 
       {/* Main Content */}
