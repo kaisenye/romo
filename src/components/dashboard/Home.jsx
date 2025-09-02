@@ -5,16 +5,19 @@ import useDictationStore from '../../stores/dictationStore'
 const Home = () => {
   // Use Zustand selectors directly to ensure re-renders
   const dictationHistory = useDictationStore((state) => state.dictationHistory || [])
-  const historyStats = useDictationStore((state) => state.historyStats || {
-    totalSessions: 0,
-    totalWords: 0,
-    avgWordsPerSession: 0,
-    avgDuration: 0,
-    totalTime: 0,
-    streakDays: 0
-  })
+  const historyStats = useDictationStore(
+    (state) =>
+      state.historyStats || {
+        totalSessions: 0,
+        totalWords: 0,
+        avgWordsPerSession: 0,
+        avgDuration: 0,
+        totalTime: 0,
+        streakDays: 0,
+      }
+  )
   const isLoadingHistory = useDictationStore((state) => state.isLoadingHistory || false)
-  
+
   const [copiedId, setCopiedId] = useState(null)
   const [copyTimeout, setCopyTimeout] = useState(null)
 
@@ -22,7 +25,7 @@ const Home = () => {
   useEffect(() => {
     const loadHistory = useDictationStore.getState().loadDictationHistory
     if (loadHistory) {
-      loadHistory().catch(error => {
+      loadHistory().catch((error) => {
         console.error('Error loading dictation history:', error)
       })
     }
@@ -36,7 +39,7 @@ const Home = () => {
       if (document.visibilityState === 'visible' && !isLoadingHistory) {
         const loadHistory = useDictationStore.getState().loadDictationHistory
         if (loadHistory) {
-          loadHistory().catch(error => {
+          loadHistory().catch((error) => {
             console.error('Error refreshing dictation history on visibility change:', error)
           })
         }
@@ -44,7 +47,7 @@ const Home = () => {
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
@@ -64,18 +67,18 @@ const Home = () => {
     try {
       await navigator.clipboard.writeText(text)
       setCopiedId(id)
-      
+
       // Clear any existing timeout
       if (copyTimeout) {
         clearTimeout(copyTimeout)
       }
-      
+
       // Set new timeout to reset the copied state
       const timeout = setTimeout(() => {
         setCopiedId(null)
         setCopyTimeout(null)
       }, 2000)
-      
+
       setCopyTimeout(timeout)
     } catch (err) {
       console.error('Failed to copy text:', err)
@@ -115,11 +118,13 @@ const Home = () => {
     <div className="flex-1 px-6 pt-6 pb-16 overflow-y-auto">
       {/* Header Stats */}
       <div className="mb-8">
-        <h1 className="text-lg font-bold text-neutral-100 mb-2">Welcome back, User</h1>
+        <h1 className="text-lg font-bold text-neutral-100 mb-2">Welcome back</h1>
         <div className="flex items-center space-x-6 text-xs text-neutral-400">
           <div className="flex items-center space-x-1">
             <Zap className="w-4 h-4 text-orange-400" />
-            <span>{streakDays} day{streakDays !== 1 ? 's' : ''} streak</span>
+            <span>
+              {streakDays} day{streakDays !== 1 ? 's' : ''} streak
+            </span>
           </div>
           <div className="flex items-center space-x-1">
             <FileText className="w-4 h-4 text-blue-400" />
@@ -190,37 +195,38 @@ const Home = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {Array.isArray(dictationHistory) && dictationHistory.map((item) => (
-              <div
-                key={item.id}
-                className="bg-neutral-800 rounded-lg p-4 border border-neutral-700 hover:border-neutral-600 transition-colors group"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <Clock className="w-4 h-4 text-neutral-500" />
-                    <span className="text-xs text-neutral-400">{formatTime(item.timestamp)}</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-3 text-xs text-neutral-500">
-                      <span>{item.wordCount} words</span>
-                      <span>{item.duration}s</span>
+            {Array.isArray(dictationHistory) &&
+              dictationHistory.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-neutral-800 rounded-lg p-4 border border-neutral-700 hover:border-neutral-600 transition-colors group"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <Clock className="w-4 h-4 text-neutral-500" />
+                      <span className="text-xs text-neutral-400">{formatTime(item.timestamp)}</span>
                     </div>
-                    <button
-                      onClick={() => copyToClipboard(item.text, item.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-neutral-700 rounded"
-                      title="Copy to clipboard"
-                    >
-                      {copiedId === item.id ? (
-                        <Check className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <Copy className="w-4 h-4 text-neutral-500 hover:text-neutral-300" />
-                      )}
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-3 text-xs text-neutral-500">
+                        <span>{item.wordCount} words</span>
+                        <span>{item.duration}s</span>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(item.text, item.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-neutral-700 rounded"
+                        title="Copy to clipboard"
+                      >
+                        {copiedId === item.id ? (
+                          <Check className="w-4 h-4 text-green-400" />
+                        ) : (
+                          <Copy className="w-4 h-4 text-neutral-500 hover:text-neutral-300" />
+                        )}
+                      </button>
+                    </div>
                   </div>
+                  <p className="text-sm text-neutral-200 leading-relaxed">{item.text}</p>
                 </div>
-                <p className="text-sm text-neutral-200 leading-relaxed">{item.text}</p>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </section>
