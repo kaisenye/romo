@@ -15,7 +15,7 @@
     "electron:dev": "concurrently \"npm run dev\" \"npm run electron\"",
     "preview": "vite preview",
     "setup:whisper": "bash scripts/setup-whisper-cpp.sh",
-"_TODO_MVP_setup:llama": "bash scripts/setup-llama-cpp.sh",
+    "_TODO_MVP_setup:llama": "bash scripts/setup-llama-cpp.sh",
     "verify:whisper": "bash scripts/verify-setup.sh",
     "postinstall": "echo 'Run npm run setup:whisper to setup Whisper.cpp'"
   },
@@ -41,6 +41,7 @@
     "node-fetch": "^3.3.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "uuid": "^11.1.0",
     "zustand": "^5.0.5"
   },
   "devDependencies": {

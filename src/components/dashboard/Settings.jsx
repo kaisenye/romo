@@ -36,7 +36,7 @@ const SettingsPage = () => {
           <div className="bg-neutral-800 rounded-lg p-4 border border-neutral-700">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-semibold text-base text-neutral-100">{userPlan} Plan</h3>
+                <h3 className="font-semibold text-base text-neutral-100 mb-2">{userPlan} Plan</h3>
                 <p className="text-neutral-400 text-xs">
                   {userPlan === 'Basic'
                     ? 'Limited dictation features with local processing'

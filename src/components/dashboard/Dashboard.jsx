@@ -9,6 +9,8 @@ const Dashboard = ({ onClose }) => {
   const { userPlan } = useDictationStore()
   const [currentPage, setCurrentPage] = useState('home')
 
+  console.log('Dashboard render - currentPage:', currentPage)
+
   return (
     <div
       className="w-full h-screen bg-neutral-900 flex overflow-hidden"
@@ -36,7 +38,12 @@ const Dashboard = ({ onClose }) => {
       <div className="w-48 bg-neutral-800 border-r border-neutral-700 px-4 py-6" style={{ paddingTop: '65px' }}>
         <nav className="space-y-2 text-xs">
           <div
-            onClick={() => setCurrentPage('home')}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              console.log('Home navigation clicked')
+              setCurrentPage('home')
+            }}
             className={`flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-neutral-600 cursor-pointer transition-colors ${
               currentPage === 'home' ? 'bg-neutral-700 text-neutral-200' : 'text-neutral-400 hover:text-neutral-200'
             }`}
@@ -45,7 +52,12 @@ const Dashboard = ({ onClose }) => {
             <span className="font-medium flex items-center">Home</span>
           </div>
           <div
-            onClick={() => setCurrentPage('settings')}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              console.log('Settings navigation clicked')
+              setCurrentPage('settings')
+            }}
             className={`flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-neutral-600 cursor-pointer transition-colors ${
               currentPage === 'settings' ? 'bg-neutral-700 text-neutral-200' : 'text-neutral-400 hover:text-neutral-200'
             }`}

@@ -53,4 +53,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Clipboard and paste operations
   pasteToFocusedApp: (text) => ipcRenderer.invoke('paste-to-focused-app', text),
+  
+  // Dictation History operations
+  getDictationHistory: () => ipcRenderer.invoke('get-dictation-history'),
+  getDictationStats: () => ipcRenderer.invoke('get-dictation-stats'),
+  addDictationEntry: (entry) => ipcRenderer.invoke('add-dictation-entry', entry),
+  deleteDictationEntry: (id) => ipcRenderer.invoke('delete-dictation-entry', id),
+  clearDictationHistory: () => ipcRenderer.invoke('clear-dictation-history'),
+  getUserDataPath: () => ipcRenderer.invoke('get-user-data-path'),
 })

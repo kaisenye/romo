@@ -25,9 +25,15 @@ class ErrorUtils {
    * Standard success response format for IPC operations
    * @param {any} data - Success data
    * @param {string} operation - Operation that succeeded (optional)
-   * @returns {Object} - Standardized success response
+   * @returns {any} - Returns data directly for simple types, wrapped object for complex responses
    */
   static createSuccessResponse(data, operation = null) {
+    // For arrays and primitives, return them directly to avoid spread issues
+    if (Array.isArray(data) || typeof data !== 'object' || data === null) {
+      return data
+    }
+    
+    // For objects, create wrapped response
     const response = {
       success: true,
       ...data

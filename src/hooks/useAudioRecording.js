@@ -309,6 +309,7 @@ const useAudioRecording = () => {
           .join('')
 
         console.log('Sending audio to Whisper for transcription...')
+        const transcriptStartTime = Date.now() // Track processing start time
         const result = await window.electronAPI.processAudioChunk(hexString, sampleRate)
         console.log('Whisper result:', result)
 
@@ -385,6 +386,35 @@ const useAudioRecording = () => {
         // Update the store
         if (window.useDictationStore) {
           window.useDictationStore.getState().updateTranscription(finalText)
+        }
+
+        // Save to dictation history
+        if (finalText && finalText !== '[BLANK_AUDIO]' && window.useDictationStore) {
+          try {
+            const recordingEndTime = Date.now()
+            const startTime = recordingStartTimeRef.current || recordingEndTime
+            const duration = Math.round((recordingEndTime - startTime) / 1000) // Duration in seconds
+            const processingTime = Date.now() - transcriptStartTime // Processing time in ms
+            
+            const historyEntry = {
+              timestamp: new Date().toISOString(),
+              text: finalText,
+              duration: duration,
+              processingTime: processingTime
+            }
+
+            console.log('Saving dictation entry to history:', {
+              duration: `${duration}s`,
+              processingTime: `${processingTime}ms`,
+              textLength: finalText.length
+            })
+
+            // Save to history via store action (which handles IPC)
+            await window.useDictationStore.getState().addDictationEntry(historyEntry)
+          } catch (historyError) {
+            console.warn('Failed to save dictation to history:', historyError.message)
+            // Don't fail the entire operation if history saving fails
+          }
         }
 
         // Clear audio data

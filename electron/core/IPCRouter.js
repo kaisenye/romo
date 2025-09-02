@@ -2,6 +2,7 @@ const { ipcMain, Notification } = require('electron')
 const fs = require('fs').promises
 const { TIMEOUTS } = require('../utils/Constants.js')
 const ErrorUtils = require('../utils/ErrorUtils.js')
+const dictationHistoryService = require('../services/DictationHistoryService.js')
 
 /**
  * IPCRouter - Extracted from main.js
@@ -216,6 +217,42 @@ class IPCRouter {
       }
     })
 
+    // Dictation History handlers
+    ipcMain.handle('get-dictation-history', ErrorUtils.wrapIPCHandler(async () => {
+      console.log('Getting dictation history...')
+      const history = await dictationHistoryService.getHistory()
+      console.log(`Retrieved ${history.length} dictation entries`)
+      return history
+    }, 'get dictation history'))
+
+    ipcMain.handle('get-dictation-stats', ErrorUtils.wrapIPCHandler(async () => {
+      console.log('Getting dictation statistics...')
+      const stats = await dictationHistoryService.getStatistics()
+      console.log('Retrieved dictation stats:', stats)
+      return stats
+    }, 'get dictation stats'))
+
+    ipcMain.handle('add-dictation-entry', ErrorUtils.wrapIPCHandler(async (event, entry) => {
+      console.log('Adding dictation entry:', { text: entry.text?.substring(0, 50) + '...', duration: entry.duration })
+      const savedEntry = await dictationHistoryService.addEntry(entry)
+      console.log('Dictation entry saved with ID:', savedEntry.id)
+      return savedEntry
+    }, 'add dictation entry'))
+
+    ipcMain.handle('delete-dictation-entry', ErrorUtils.wrapIPCHandler(async (event, id) => {
+      console.log('Deleting dictation entry:', id)
+      const success = await dictationHistoryService.deleteEntry(id)
+      console.log(`Dictation entry ${id} ${success ? 'deleted' : 'not found'}`)
+      return success
+    }, 'delete dictation entry'))
+
+    ipcMain.handle('clear-dictation-history', ErrorUtils.wrapIPCHandler(async () => {
+      console.log('Clearing all dictation history...')
+      await dictationHistoryService.clearHistory()
+      console.log('Dictation history cleared')
+      return true
+    }, 'clear dictation history'))
+
     console.log('IPC handlers registered successfully')
   }
 
@@ -243,6 +280,11 @@ class IPCRouter {
       'ai-shutdown',
       'llama-refine-transcript',
       'agent-process-request',
+      'get-dictation-history',
+      'get-dictation-stats',
+      'add-dictation-entry',
+      'delete-dictation-entry',
+      'clear-dictation-history',
     ]
 
     handlers.forEach(handler => {

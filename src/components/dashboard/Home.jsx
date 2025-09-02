@@ -1,50 +1,99 @@
-import React from 'react'
-import { Clock, FileText, Zap, TrendingUp } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { Clock, FileText, Zap, TrendingUp, Copy, Check } from 'lucide-react'
+import useDictationStore from '../../stores/dictationStore'
 
 const Home = () => {
-  // Fake temporary dictation history data
-  const dictationHistory = [
-    {
-      id: 1,
-      timestamp: '2024-03-15T14:30:00Z',
-      text: 'Please draft an email to the marketing team about our upcoming product launch. The email should include key features, timeline, and next steps for coordination.',
-      wordCount: 28,
-      duration: '45s',
-      isAgentMode: true,
-    },
-    {
-      id: 2,
-      timestamp: '2024-03-15T11:15:00Z',
-      text: 'Meeting notes from today: Discussed Q2 budget allocation, approved new hiring plan for engineering team, need to follow up on client feedback by Friday.',
-      wordCount: 26,
-      duration: '38s',
-      isAgentMode: false,
-    },
-    {
-      id: 3,
-      timestamp: '2024-03-15T09:45:00Z',
-      text: 'Create a comprehensive project timeline for the mobile app redesign including research phase, wireframing, design mockups, development sprints, and testing phases.',
-      wordCount: 24,
-      duration: '42s',
-      isAgentMode: true,
-    },
-    {
-      id: 4,
-      timestamp: '2024-03-14T16:20:00Z',
-      text: 'Quick reminder to schedule dentist appointment, buy groceries for dinner party this weekend, and review the quarterly reports before Monday morning.',
-      wordCount: 22,
-      duration: '35s',
-      isAgentMode: false,
-    },
-    {
-      id: 5,
-      timestamp: '2024-03-14T13:10:00Z',
-      text: 'Draft a proposal for implementing automated testing in our CI/CD pipeline. Include cost analysis, timeline, and expected benefits for the development team.',
-      wordCount: 25,
-      duration: '41s',
-      isAgentMode: true,
-    },
-  ]
+  // Use Zustand selectors directly to ensure re-renders
+  const dictationHistory = useDictationStore((state) => state.dictationHistory || [])
+  const historyStats = useDictationStore((state) => state.historyStats || {
+    totalSessions: 0,
+    totalWords: 0,
+    avgWordsPerSession: 0,
+    avgDuration: 0,
+    totalTime: 0,
+    streakDays: 0
+  })
+  const isLoadingHistory = useDictationStore((state) => state.isLoadingHistory || false)
+  
+  const [copiedId, setCopiedId] = useState(null)
+  const [copyTimeout, setCopyTimeout] = useState(null)
+
+  // Load dictation history when component mounts
+  useEffect(() => {
+    const loadHistory = useDictationStore.getState().loadDictationHistory
+    if (loadHistory) {
+      loadHistory().catch(error => {
+        console.error('Error loading dictation history:', error)
+      })
+    }
+  }, [])
+
+  // Listen for view changes to refresh history when user returns to dashboard
+  // This ensures real-time updates when new dictation entries are added
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // Refresh history when user returns to the dashboard tab/window
+      if (document.visibilityState === 'visible' && !isLoadingHistory) {
+        const loadHistory = useDictationStore.getState().loadDictationHistory
+        if (loadHistory) {
+          loadHistory().catch(error => {
+            console.error('Error refreshing dictation history on visibility change:', error)
+          })
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, []) // Remove dependencies that cause infinite loops
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (copyTimeout) {
+        clearTimeout(copyTimeout)
+      }
+    }
+  }, [copyTimeout])
+
+  // Copy function with visual feedback
+  const copyToClipboard = async (text, id) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedId(id)
+      
+      // Clear any existing timeout
+      if (copyTimeout) {
+        clearTimeout(copyTimeout)
+      }
+      
+      // Set new timeout to reset the copied state
+      const timeout = setTimeout(() => {
+        setCopiedId(null)
+        setCopyTimeout(null)
+      }, 2000)
+      
+      setCopyTimeout(timeout)
+    } catch (err) {
+      console.error('Failed to copy text:', err)
+      // Fallback for older browsers or failed clipboard access
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      document.body.appendChild(textArea)
+      textArea.select()
+      try {
+        document.execCommand('copy')
+        setCopiedId(id)
+        setTimeout(() => setCopiedId(null), 2000)
+      } catch (fallbackErr) {
+        console.error('Fallback copy failed:', fallbackErr)
+      }
+      document.body.removeChild(textArea)
+    }
+  }
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp)
@@ -56,8 +105,11 @@ const Home = () => {
     return `${Math.floor(diffInHours / 24)}d ago`
   }
 
-  const totalWords = dictationHistory.reduce((sum, item) => sum + item.wordCount, 0)
-  const avgWordsPerSession = Math.round(totalWords / dictationHistory.length)
+  // Use real statistics from the store, with fallbacks for when history is empty
+  const totalWords = historyStats.totalWords
+  const avgWordsPerSession = historyStats.avgWordsPerSession
+  const totalSessions = historyStats.totalSessions
+  const streakDays = historyStats.streakDays
 
   return (
     <div className="flex-1 px-6 pt-6 pb-16 overflow-y-auto">
@@ -67,7 +119,7 @@ const Home = () => {
         <div className="flex items-center space-x-6 text-xs text-neutral-400">
           <div className="flex items-center space-x-1">
             <Zap className="w-4 h-4 text-orange-400" />
-            <span>1 week streak</span>
+            <span>{streakDays} day{streakDays !== 1 ? 's' : ''} streak</span>
           </div>
           <div className="flex items-center space-x-1">
             <FileText className="w-4 h-4 text-blue-400" />
@@ -75,7 +127,7 @@ const Home = () => {
           </div>
           <div className="flex items-center space-x-1">
             <TrendingUp className="w-4 h-4 text-green-400" />
-            <span>{avgWordsPerSession} avg WPM</span>
+            <span>{avgWordsPerSession} avg words/session</span>
           </div>
         </div>
       </div>
@@ -89,7 +141,7 @@ const Home = () => {
               <FileText className="w-4 h-4 text-blue-400" />
               <span className="text-xs text-neutral-400">Sessions</span>
             </div>
-            <span className="text-lg font-semibold text-neutral-100">{dictationHistory.length}</span>
+            <span className="text-lg font-semibold text-neutral-100">{totalSessions}</span>
           </div>
           <div className="bg-neutral-800 rounded-lg p-4 border border-neutral-700">
             <div className="flex items-center space-x-2 mb-1">
@@ -114,46 +166,63 @@ const Home = () => {
               <Clock className="w-4 h-4 text-purple-400" />
               <span className="text-xs text-neutral-400">Avg Duration</span>
             </div>
-            <span className="text-lg font-semibold text-neutral-100">
-              {Math.round(
-                dictationHistory.reduce((sum, item) => sum + parseInt(item.duration), 0) / dictationHistory.length
-              )}
-              s
-            </span>
+            <span className="text-lg font-semibold text-neutral-100">{historyStats.avgDuration}s</span>
           </div>
         </div>
       </section>
 
       {/* Recent Activity */}
       <section>
-        <h2 className="text-base font-semibold text-neutral-100 mb-4">Recent Activity</h2>
-        <div className="space-y-3">
-          {dictationHistory.map((item) => (
-            <div
-              key={item.id}
-              className="bg-neutral-800 rounded-lg p-4 border border-neutral-700 hover:border-neutral-600 transition-colors"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-4 h-4 text-neutral-500" />
-                  <span className="text-xs text-neutral-400">{formatTime(item.timestamp)}</span>
-                  {/* TODO: MVP: Agent mode badge temporarily commented out - restore for full release
-                  {item.isAgentMode && (
-                    <span className="px-2 py-0.5 bg-blue-900/30 text-blue-300 text-[10px] rounded-lg border border-blue-800">
-                      Agent Mode
-                    </span>
-                  )}
-                  */}
-                </div>
-                <div className="flex items-center space-x-3 text-xs text-neutral-500">
-                  <span>{item.wordCount} words</span>
-                  <span>{item.duration}</span>
-                </div>
-              </div>
-              <p className="text-sm text-neutral-200 leading-relaxed">{item.text}</p>
-            </div>
-          ))}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold text-neutral-100">Recent Activity</h2>
         </div>
+        {isLoadingHistory ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-neutral-500 text-sm">Loading dictation history...</div>
+          </div>
+        ) : !Array.isArray(dictationHistory) || dictationHistory.length === 0 ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <FileText className="w-8 h-8 text-neutral-600 mx-auto mb-2" />
+              <p className="text-neutral-500 text-sm">No dictations yet</p>
+              <p className="text-neutral-600 text-xs">Start dictating to see your history here</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {Array.isArray(dictationHistory) && dictationHistory.map((item) => (
+              <div
+                key={item.id}
+                className="bg-neutral-800 rounded-lg p-4 border border-neutral-700 hover:border-neutral-600 transition-colors group"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <Clock className="w-4 h-4 text-neutral-500" />
+                    <span className="text-xs text-neutral-400">{formatTime(item.timestamp)}</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 text-xs text-neutral-500">
+                      <span>{item.wordCount} words</span>
+                      <span>{item.duration}s</span>
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(item.text, item.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-neutral-700 rounded"
+                      title="Copy to clipboard"
+                    >
+                      {copiedId === item.id ? (
+                        <Check className="w-4 h-4 text-green-400" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-neutral-500 hover:text-neutral-300" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <p className="text-sm text-neutral-200 leading-relaxed">{item.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   )

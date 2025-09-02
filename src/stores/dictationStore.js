@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-const useDictationStore = create((set) => ({
+const useDictationStore = create((set, get) => ({
   // State
   isRecording: false,
   isProcessing: false,
@@ -17,6 +17,18 @@ const useDictationStore = create((set) => ({
     openai: '',
     claude: '',
   },
+
+  // Dictation History
+  dictationHistory: [],
+  historyStats: {
+    totalSessions: 0,
+    totalWords: 0,
+    avgWordsPerSession: 0,
+    avgDuration: 0,
+    totalTime: 0,
+    streakDays: 0
+  },
+  isLoadingHistory: false,
 
   // Actions
   updateTranscription: (text) => {
@@ -77,6 +89,173 @@ const useDictationStore = create((set) => ({
       transcription: '',
       error: null,
     })
+  },
+
+  // Dictation History Actions
+  loadDictationHistory: async () => {
+    console.log('🔄 STORE: loadDictationHistory called')
+    set({ isLoadingHistory: true })
+    try {
+      if (window.electronAPI && window.electronAPI.getDictationHistory) {
+        console.log('📡 Fetching dictation history...')
+        const historyResponse = await window.electronAPI.getDictationHistory()
+        const statsResponse = await window.electronAPI.getDictationStats()
+        
+        console.log('📦 Raw history response:', historyResponse)
+        console.log('📊 Raw stats response:', statsResponse)
+        
+        // Extract the actual array from the response object
+        let history = historyResponse
+        if (historyResponse && typeof historyResponse === 'object' && !Array.isArray(historyResponse)) {
+          // Convert object with numeric keys to array
+          const keys = Object.keys(historyResponse).filter(key => !isNaN(key)).sort((a, b) => Number(a) - Number(b))
+          history = keys.map(key => historyResponse[key])
+          console.log('🔧 Converted object to array:', history)
+        }
+        
+        set((state) => {
+          console.log('🏪 Setting store state with:', {
+            history: history || [],
+            historyLength: (history || []).length,
+            stats: statsResponse || state.historyStats
+          })
+          return {
+            dictationHistory: history || [],
+            historyStats: statsResponse || state.historyStats,
+            isLoadingHistory: false
+          }
+        })
+        
+        console.log('✅ Store updated successfully')
+      } else {
+        console.warn('⚠️ electronAPI.getDictationHistory not available')
+        set({ isLoadingHistory: false })
+      }
+    } catch (error) {
+      console.error('❌ Failed to load dictation history:', error)
+      set({ 
+        isLoadingHistory: false,
+        error: 'Failed to load dictation history'
+      })
+    }
+  },
+
+  addDictationEntry: async (entry) => {
+    try {
+      if (window.electronAPI && window.electronAPI.addDictationEntry) {
+        const savedEntry = await window.electronAPI.addDictationEntry(entry)
+        
+        // Update local state
+        set((state) => {
+          const currentHistory = state.dictationHistory
+          const newHistory = [savedEntry, ...currentHistory.slice(0, 9)] // Keep latest 10
+          return {
+            dictationHistory: newHistory
+          }
+        })
+        
+        // Recalculate stats
+        const stats = await window.electronAPI.getDictationStats()
+        set((state) => ({
+          historyStats: stats || state.historyStats
+        }))
+        
+        console.log('Added dictation entry to history:', savedEntry.id)
+        return savedEntry
+      } else {
+        console.warn('electronAPI.addDictationEntry not available')
+        return null
+      }
+    } catch (error) {
+      console.error('Failed to add dictation entry:', error)
+      set({ error: 'Failed to save dictation entry' })
+      throw error
+    }
+  },
+
+  deleteDictationEntry: async (id) => {
+    try {
+      if (window.electronAPI && window.electronAPI.deleteDictationEntry) {
+        const success = await window.electronAPI.deleteDictationEntry(id)
+        
+        if (success) {
+          // Update local state
+          set((state) => ({
+            dictationHistory: state.dictationHistory.filter(entry => entry.id !== id)
+          }))
+          
+          // Recalculate stats
+          const stats = await window.electronAPI.getDictationStats()
+          set((state) => ({
+            historyStats: stats || state.historyStats
+          }))
+          
+          console.log('Deleted dictation entry:', id)
+          return true
+        }
+        return false
+      } else {
+        console.warn('electronAPI.deleteDictationEntry not available')
+        return false
+      }
+    } catch (error) {
+      console.error('Failed to delete dictation entry:', error)
+      set({ error: 'Failed to delete dictation entry' })
+      return false
+    }
+  },
+
+  clearDictationHistory: async () => {
+    try {
+      if (window.electronAPI && window.electronAPI.clearDictationHistory) {
+        await window.electronAPI.clearDictationHistory()
+        
+        set({ 
+          dictationHistory: [],
+          historyStats: {
+            totalSessions: 0,
+            totalWords: 0,
+            avgWordsPerSession: 0,
+            avgDuration: 0,
+            totalTime: 0,
+            streakDays: 0
+          }
+        })
+        
+        console.log('Cleared dictation history')
+      } else {
+        console.warn('electronAPI.clearDictationHistory not available')
+      }
+    } catch (error) {
+      console.error('Failed to clear dictation history:', error)
+      set({ error: 'Failed to clear dictation history' })
+    }
+  },
+
+  // Debug method to test store updates
+  debugSetTestHistory: () => {
+    console.log('🧪 Setting test history data')
+    set({
+      dictationHistory: [
+        {
+          id: 'test-1',
+          timestamp: new Date().toISOString(),
+          text: 'This is a test dictation entry',
+          wordCount: 7,
+          duration: 5,
+          processingTime: 100
+        }
+      ],
+      historyStats: {
+        totalSessions: 1,
+        totalWords: 7,
+        avgWordsPerSession: 7,
+        avgDuration: 5,
+        totalTime: 5,
+        streakDays: 1
+      }
+    })
+    console.log('✅ Test data set')
   },
 }))
 
