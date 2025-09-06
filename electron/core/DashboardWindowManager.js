@@ -40,6 +40,7 @@ class DashboardWindowManager {
           ? path.join(__dirname, '..', 'preload.js')
           : path.join(app.getAppPath(), 'dist-electron', 'preload.js'),
         webSecurity: true,
+        devTools: isDev, // Only enable dev tools in development
       },
       show: false, // Don't show until ready
       icon: path.join(__dirname, '../../public/icon.png'),
@@ -77,11 +78,6 @@ class DashboardWindowManager {
     this.dashboardWindow.once('ready-to-show', () => {
       this.dashboardWindow.show()
       this.dashboardWindow.focus()
-
-      // Open dev tools for debugging in development
-      if (isDev) {
-        this.dashboardWindow.webContents.openDevTools()
-      }
     })
 
     // Handle window closed
