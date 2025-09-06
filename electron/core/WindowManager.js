@@ -94,6 +94,7 @@ class WindowManager {
           ? path.join(__dirname, '..', 'preload.js')
           : path.join(app.getAppPath(), 'dist-electron', 'preload.js'),
         webSecurity: true,
+        devTools: isDev, // Only enable dev tools in development
       },
       show: false, // Don't show until ready
       icon: path.join(__dirname, '../../public/icon.png'),
@@ -133,8 +134,6 @@ class WindowManager {
     // Load the app
     if (isDev) {
       this.mainWindow.loadURL(APP_CONFIG.DEV_SERVER_URL) // Was: 'http://localhost:5173'
-      // Open dev tools for debugging
-      this.mainWindow.webContents.openDevTools()
     } else {
       const filePath = path.join(app.getAppPath(), 'dist', 'index.html')
       console.log('Loading file from:', filePath)

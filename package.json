@@ -15,9 +15,9 @@
     "electron:dev": "concurrently \"npm run dev\" \"npm run electron\"",
     "preview": "vite preview",
     "setup:whisper": "bash scripts/setup-whisper-cpp.sh",
-    "setup:llama": "bash scripts/setup-llama-cpp.sh",
+    "_TODO_MVP_setup:llama": "bash scripts/setup-llama-cpp.sh",
     "verify:whisper": "bash scripts/verify-setup.sh",
-    "postinstall": "echo 'Run npm run setup:whisper to setup Whisper.cpp and npm run setup:llama to setup Llama.cpp'"
+    "postinstall": "echo 'Run npm run setup:whisper to setup Whisper.cpp'"
   },
   "keywords": [
     "electron",
@@ -29,7 +29,6 @@
     "ai",
     "speech-to-text",
     "whisper",
-    "llama",
     "macos"
   ],
   "author": "Your Name",
@@ -42,6 +41,7 @@
     "node-fetch": "^3.3.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "uuid": "^11.1.0",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
@@ -121,21 +121,6 @@
         "filter": [
           "*.bin"
         ]
-      },
-      {
-        "from": "llama.cpp/build/bin/",
-        "to": "llama.cpp/build/bin/",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "llama.cpp/models/",
-        "to": "llama.cpp/models/",
-        "filter": [
-          "phi-2.Q4_K_M.gguf",
-          "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
-        ]
       }
     ],
     "mac": {
@@ -151,6 +136,8 @@
       ],
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
       "extendInfo": {
         "NSMicrophoneUsageDescription": "Romo needs microphone access to record audio for transcription.",
         "NSAppleEventsUsageDescription": "Romo needs to send keystrokes to paste transcribed text into other applications."

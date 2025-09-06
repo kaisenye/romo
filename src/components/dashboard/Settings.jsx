@@ -36,7 +36,7 @@ const SettingsPage = () => {
           <div className="bg-neutral-800 rounded-lg p-4 border border-neutral-700">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-semibold text-base text-neutral-100">{userPlan} Plan</h3>
+                <h3 className="font-semibold text-base text-neutral-100 mb-2">{userPlan} Plan</h3>
                 <p className="text-neutral-400 text-xs">
                   {userPlan === 'Basic'
                     ? 'Limited dictation features with local processing'
@@ -45,15 +45,16 @@ const SettingsPage = () => {
               </div>
               {userPlan === 'Basic' && (
                 <Button size="sm" variant="primary">
-                  Upgrade to Pro
+                  Agent Mode Coming Soon!
                 </Button>
               )}
             </div>
           </div>
         </section>
 
-        {/* Custom Instructions */}
-        <section>
+        {/* TODO: Add back in when we have a way to handle the keys */}
+        {/* MVP: Agent mode instructions temporarily commented out */}
+        <section className="hidden">
           <div className="flex items-center space-x-2 mb-4">
             <Settings className="w-5 h-5 text-neutral-400" />
             <h2 className="text-base font-semibold text-neutral-100">Agent Mode Instructions</h2>
@@ -82,7 +83,8 @@ const SettingsPage = () => {
         </section>
 
         {/* API Keys */}
-        <section>
+        {/* TODO: Add back in when we have a way to handle the keys */}
+        <section className="hidden">
           <div className="flex items-center space-x-2 mb-4">
             <Key className="w-5 h-5 text-neutral-400" />
             <h2 className="text-base font-semibold text-neutral-100">Remote LLM Services</h2>
