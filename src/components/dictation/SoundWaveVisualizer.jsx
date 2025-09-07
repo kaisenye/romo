@@ -65,15 +65,15 @@ const SoundWaveVisualizer = ({ audioLevel = 0, isRecording = false, isAgentMode 
 
         if (isRecording) {
           if (isAgentMode) {
-            // Green color when recording in agent mode
-            ctx.fillStyle = '#9ae600' // green-500
+            // Bright lime color when recording in agent mode
+            ctx.fillStyle = '#a3e635' // lime-400 - brighter and more visible
           } else {
             // White color when recording in normal mode
             ctx.fillStyle = '#ffffff'
           }
         } else {
           if (isAgentMode) {
-            // Green gradient when idle in agent mode
+            // Lime gradient when idle in agent mode
             const gradient = ctx.createLinearGradient(0, centerY - barHeight / 2, 0, centerY + barHeight / 2)
             gradient.addColorStop(0, '#a3e635') // lime-400
             gradient.addColorStop(0.5, '#84cc16') // lime-500
@@ -106,8 +106,6 @@ const SoundWaveVisualizer = ({ audioLevel = 0, isRecording = false, isAgentMode 
   return (
     <div className={`flex items-center justify-center rounded-full ${className}`}>
       <canvas ref={canvasRef} width={100} height={50} />
-      {/* Debug fallback */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none"></div>
     </div>
   )
 }

@@ -33,15 +33,21 @@ class IPCRouter {
     })
 
     // File system operations
-    ipcMain.handle('read-file', ErrorUtils.wrapIPCHandler(async (event, filePath) => {
-      const data = await fs.readFile(filePath, 'utf8')
-      return { data }
-    }, 'read file'))
+    ipcMain.handle(
+      'read-file',
+      ErrorUtils.wrapIPCHandler(async (event, filePath) => {
+        const data = await fs.readFile(filePath, 'utf8')
+        return { data }
+      }, 'read file')
+    )
 
-    ipcMain.handle('write-file', ErrorUtils.wrapIPCHandler(async (event, filePath, data) => {
-      await fs.writeFile(filePath, data, 'utf8')
-      return { written: true }
-    }, 'write file'))
+    ipcMain.handle(
+      'write-file',
+      ErrorUtils.wrapIPCHandler(async (event, filePath, data) => {
+        await fs.writeFile(filePath, data, 'utf8')
+        return { written: true }
+      }, 'write file')
+    )
 
     // Window operations
     ipcMain.handle('minimize-window', () => {
@@ -183,75 +189,90 @@ class IPCRouter {
       }
     })
 
-    // LLM Service - Now enabled with improved /v1/chat/completions endpoint
-    ipcMain.handle('llama-refine-transcript', async (event, transcript) => {
-      console.log('\n🔄 LLAMA REFINEMENT REQUEST')
-      console.log('Original transcript:', `"${transcript}"`)
-      try {
-        const refinedTranscript = await this.llamaService.refineTranscript(transcript)
-        console.log('✅ LLAMA REFINEMENT SUCCESS')
-        console.log('Refined transcript:', `"${refinedTranscript}"`)
-        console.log('================================\n')
-        return { success: true, refinedTranscript }
-      } catch (error) {
-        console.error('❌ LLAMA REFINEMENT FAILED:', error.message)
-        console.log('================================\n')
-        return { success: false, error: error.message }
-      }
-    })
+    // LLM Service - Disabled (now using direct OpenAI API calls from React)
+    // ipcMain.handle('llama-refine-transcript', async (event, transcript) => {
+    //   console.log('\n🔄 LLAMA REFINEMENT REQUEST')
+    //   console.log('Original transcript:', `"${transcript}"`)
+    //   try {
+    //     const refinedTranscript = await this.llamaService.refineTranscript(transcript)
+    //     console.log('✅ LLAMA REFINEMENT SUCCESS')
+    //     console.log('Refined transcript:', `"${refinedTranscript}"`)
+    //     console.log('================================\n')
+    //     return { success: true, refinedTranscript }
+    //   } catch (error) {
+    //     console.error('❌ LLAMA REFINEMENT FAILED:', error.message)
+    //     console.log('================================\n')
+    //     return { success: false, error: error.message }
+    //   }
+    // })
 
-    // Agent Mode handlers (using LlamaCpp service)
-    ipcMain.handle('agent-process-request', async (event, transcript) => {
-      console.log('\n🤖 AGENT MODE REQUEST')
-      console.log('Original transcript:', `"${transcript}"`)
-      try {
-        const result = await this.llamaService.processAgentRequest(transcript)
-        console.log('✅ AGENT MODE SUCCESS')
-        console.log('Result:', result)
-        console.log('================================\n')
-        return result
-      } catch (error) {
-        console.error('❌ AGENT MODE FAILED:', error.message)
-        console.log('================================\n')
-        return { success: false, error: error.message, fallbackContent: transcript }
-      }
-    })
+    // Agent Mode handlers - Disabled (now using direct OpenAI API calls from React)
+    // ipcMain.handle('agent-process-request', async (event, transcript) => {
+    //   console.log('\n🤖 AGENT MODE REQUEST')
+    //   console.log('Original transcript:', `"${transcript}"`)
+    //   try {
+    //     const result = await this.llamaService.processAgentRequest(transcript)
+    //     console.log('✅ AGENT MODE SUCCESS')
+    //     console.log('Result:', result)
+    //     console.log('================================\n')
+    //     return result
+    //   } catch (error) {
+    //     console.error('❌ AGENT MODE FAILED:', error.message)
+    //     console.log('================================\n')
+    //     return { success: false, error: error.message, fallbackContent: transcript }
+    //   }
+    // })
 
     // Dictation History handlers
-    ipcMain.handle('get-dictation-history', ErrorUtils.wrapIPCHandler(async () => {
-      console.log('Getting dictation history...')
-      const history = await dictationHistoryService.getHistory()
-      console.log(`Retrieved ${history.length} dictation entries`)
-      return history
-    }, 'get dictation history'))
+    ipcMain.handle(
+      'get-dictation-history',
+      ErrorUtils.wrapIPCHandler(async () => {
+        console.log('Getting dictation history...')
+        const history = await dictationHistoryService.getHistory()
+        console.log(`Retrieved ${history.length} dictation entries`)
+        return history
+      }, 'get dictation history')
+    )
 
-    ipcMain.handle('get-dictation-stats', ErrorUtils.wrapIPCHandler(async () => {
-      console.log('Getting dictation statistics...')
-      const stats = await dictationHistoryService.getStatistics()
-      console.log('Retrieved dictation stats:', stats)
-      return stats
-    }, 'get dictation stats'))
+    ipcMain.handle(
+      'get-dictation-stats',
+      ErrorUtils.wrapIPCHandler(async () => {
+        console.log('Getting dictation statistics...')
+        const stats = await dictationHistoryService.getStatistics()
+        console.log('Retrieved dictation stats:', stats)
+        return stats
+      }, 'get dictation stats')
+    )
 
-    ipcMain.handle('add-dictation-entry', ErrorUtils.wrapIPCHandler(async (event, entry) => {
-      console.log('Adding dictation entry:', { text: entry.text?.substring(0, 50) + '...', duration: entry.duration })
-      const savedEntry = await dictationHistoryService.addEntry(entry)
-      console.log('Dictation entry saved with ID:', savedEntry.id)
-      return savedEntry
-    }, 'add dictation entry'))
+    ipcMain.handle(
+      'add-dictation-entry',
+      ErrorUtils.wrapIPCHandler(async (event, entry) => {
+        console.log('Adding dictation entry:', { text: entry.text?.substring(0, 50) + '...', duration: entry.duration })
+        const savedEntry = await dictationHistoryService.addEntry(entry)
+        console.log('Dictation entry saved with ID:', savedEntry.id)
+        return savedEntry
+      }, 'add dictation entry')
+    )
 
-    ipcMain.handle('delete-dictation-entry', ErrorUtils.wrapIPCHandler(async (event, id) => {
-      console.log('Deleting dictation entry:', id)
-      const success = await dictationHistoryService.deleteEntry(id)
-      console.log(`Dictation entry ${id} ${success ? 'deleted' : 'not found'}`)
-      return success
-    }, 'delete dictation entry'))
+    ipcMain.handle(
+      'delete-dictation-entry',
+      ErrorUtils.wrapIPCHandler(async (event, id) => {
+        console.log('Deleting dictation entry:', id)
+        const success = await dictationHistoryService.deleteEntry(id)
+        console.log(`Dictation entry ${id} ${success ? 'deleted' : 'not found'}`)
+        return success
+      }, 'delete dictation entry')
+    )
 
-    ipcMain.handle('clear-dictation-history', ErrorUtils.wrapIPCHandler(async () => {
-      console.log('Clearing all dictation history...')
-      await dictationHistoryService.clearHistory()
-      console.log('Dictation history cleared')
-      return true
-    }, 'clear dictation history'))
+    ipcMain.handle(
+      'clear-dictation-history',
+      ErrorUtils.wrapIPCHandler(async () => {
+        console.log('Clearing all dictation history...')
+        await dictationHistoryService.clearHistory()
+        console.log('Dictation history cleared')
+        return true
+      }, 'clear dictation history')
+    )
 
     console.log('IPC handlers registered successfully')
   }
@@ -266,7 +287,7 @@ class IPCRouter {
       'read-file',
       'write-file',
       'minimize-window',
-      'maximize-window', 
+      'maximize-window',
       'close-window',
       'show-notification',
       'expand-window-for-recording',
@@ -278,8 +299,8 @@ class IPCRouter {
       'ai-process-file',
       'ai-get-status',
       'ai-shutdown',
-      'llama-refine-transcript',
-      'agent-process-request',
+      // 'llama-refine-transcript', // Disabled - using direct OpenAI API calls
+      // 'agent-process-request',   // Disabled - using direct OpenAI API calls
       'get-dictation-history',
       'get-dictation-stats',
       'add-dictation-entry',
@@ -287,7 +308,7 @@ class IPCRouter {
       'clear-dictation-history',
     ]
 
-    handlers.forEach(handler => {
+    handlers.forEach((handler) => {
       ipcMain.removeAllListeners(handler)
     })
 
