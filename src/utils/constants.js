@@ -1,7 +1,7 @@
 // AI Model Configuration
 export const AI_CONFIG = {
   whisper: {
-    model: 'base', // tiny, base, small, medium, large
+    model: 'small', // tiny, base, small, medium, large
     language: 'auto', // or specific language code
     chunk_length: 5, // seconds
   },
@@ -108,7 +108,7 @@ export const DEFAULT_SETTINGS = {
   [SETTINGS_KEYS.THEME]: 'light',
   [SETTINGS_KEYS.AUTO_START_RECORDING]: false,
   [SETTINGS_KEYS.NOTIFICATION_ENABLED]: true,
-  [SETTINGS_KEYS.WHISPER_MODEL]: 'base',
+  [SETTINGS_KEYS.WHISPER_MODEL]: 'small',
   [SETTINGS_KEYS.LLAMA_MODEL]: 'tinyllama',
   [SETTINGS_KEYS.LANGUAGE]: 'auto',
   [SETTINGS_KEYS.DEFAULT_USE_CASE]: 'auto',
@@ -116,7 +116,7 @@ export const DEFAULT_SETTINGS = {
   [SETTINGS_KEYS.AUTO_COPY_ON_COMPLETION]: false,
   [SETTINGS_KEYS.WINDOW_POSITION]: { x: 100, y: 100 },
   [SETTINGS_KEYS.WINDOW_SIZE]: { width: 600, height: 400 },
-  [SETTINGS_KEYS.AGENT_MODE_ENABLED]: false, // TODO: MVP: Agent mode disabled - restore for full release
+  [SETTINGS_KEYS.AGENT_MODE_ENABLED]: true,
 }
 
 // Audio Processing Constants
@@ -131,8 +131,7 @@ export const AUDIO_CONFIG = {
 // Global Shortcuts
 export const GLOBAL_SHORTCUTS = {
   TOGGLE_DICTATION: 'CmdOrCtrl+Shift+D',
-  // TODO: MVP: Agent mode shortcut temporarily disabled - restore for full release
-  // TOGGLE_AGENT_MODE: 'CmdOrCtrl+Shift+S',
+  TOGGLE_AGENT_MODE: 'CmdOrCtrl+Shift+S',
   COPY_TRANSCRIPTION: 'CmdOrCtrl+Shift+C',
   SHOW_HIDE_APP: 'CmdOrCtrl+Shift+H',
 }

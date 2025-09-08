@@ -73,7 +73,12 @@ echo "✅ Found $MODEL_COUNT model(s)"
 echo "🎵 Testing transcription..."
 if [ -f "whisper.cpp/samples/jfk.wav" ]; then
     echo "   Testing with JFK sample..."
-    $WHISPER_BINARY -m whisper.cpp/models/ggml-base.en.bin -f whisper.cpp/samples/jfk.wav --no-prints > /tmp/whisper_test.txt 2>&1
+    # Try small.en model first, fallback to base.en if not available
+    if [ -f "whisper.cpp/models/ggml-small.en.bin" ]; then
+        $WHISPER_BINARY -m whisper.cpp/models/ggml-small.en.bin -f whisper.cpp/samples/jfk.wav --no-prints > /tmp/whisper_test.txt 2>&1
+    else
+        $WHISPER_BINARY -m whisper.cpp/models/ggml-base.en.bin -f whisper.cpp/samples/jfk.wav --no-prints > /tmp/whisper_test.txt 2>&1
+    fi
     if [ $? -eq 0 ]; then
         echo "✅ Transcription test passed"
         echo "   Sample output: $(head -1 /tmp/whisper_test.txt)"

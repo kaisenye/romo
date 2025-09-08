@@ -93,9 +93,17 @@ echo "📦 Downloading Whisper models..."
 # Create models directory if it doesn't exist
 mkdir -p models
 
-# Download base.en model (good balance of speed and quality)
+# Download small.en model (best balance of speed and quality - PRIMARY)
+if [ ! -f "models/ggml-small.en.bin" ]; then
+    echo "   Downloading small.en model (primary)..."
+    bash ./models/download-ggml-model.sh small.en
+else
+    echo "✅ small.en model already exists"
+fi
+
+# Download base.en model (fallback option)
 if [ ! -f "models/ggml-base.en.bin" ]; then
-    echo "   Downloading base.en model..."
+    echo "   Downloading base.en model (fallback)..."
     bash ./models/download-ggml-model.sh base.en
 else
     echo "✅ base.en model already exists"
@@ -107,18 +115,6 @@ if [ ! -f "models/ggml-tiny.en.bin" ]; then
     bash ./models/download-ggml-model.sh tiny.en
 else
     echo "✅ tiny.en model already exists"
-fi
-
-# Optional: Download small.en model (better quality)
-read -p "🤔 Download small.en model for better quality? (y/N): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    if [ ! -f "models/ggml-small.en.bin" ]; then
-        echo "   Downloading small.en model..."
-        bash ./models/download-ggml-model.sh small.en
-    else
-        echo "✅ small.en model already exists"
-    fi
 fi
 
 cd ..
@@ -151,7 +147,12 @@ fi
 echo "🎵 Running a quick transcription test..."
 if [ -f "whisper.cpp/samples/jfk.wav" ]; then
     echo "   Testing with JFK sample..."
-    $WHISPER_BINARY -m whisper.cpp/models/ggml-base.en.bin -f whisper.cpp/samples/jfk.wav --output-json --no-prints > /tmp/whisper_test.txt 2>&1
+    # Try small.en model first, fallback to base.en if not available
+    if [ -f "whisper.cpp/models/ggml-small.en.bin" ]; then
+        $WHISPER_BINARY -m whisper.cpp/models/ggml-small.en.bin -f whisper.cpp/samples/jfk.wav --output-json --no-prints > /tmp/whisper_test.txt 2>&1
+    else
+        $WHISPER_BINARY -m whisper.cpp/models/ggml-base.en.bin -f whisper.cpp/samples/jfk.wav --output-json --no-prints > /tmp/whisper_test.txt 2>&1
+    fi
     if [ $? -eq 0 ]; then
         echo "✅ Transcription test passed"
         echo "   Sample output: $(head -1 /tmp/whisper_test.txt)"
@@ -175,6 +176,6 @@ echo "   The Python service in py_service/ is no longer needed."
 echo ""
 echo "💡 Tips:"
 echo "   - The app will automatically find and use the Whisper.cpp binary"
-echo "   - Models are loaded automatically (base.en is preferred)"
+echo "   - Models are loaded automatically (small.en is preferred)"
 echo "   - Check the console for initialization messages"
 echo "" 
