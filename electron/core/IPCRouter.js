@@ -3,6 +3,7 @@ const fs = require('fs').promises
 const { TIMEOUTS } = require('../utils/Constants.js')
 const ErrorUtils = require('../utils/ErrorUtils.js')
 const dictationHistoryService = require('../services/DictationHistoryService.js')
+const screenCaptureService = require('../services/ScreenCaptureService.js')
 
 /**
  * IPCRouter - Extracted from main.js
@@ -274,6 +275,14 @@ class IPCRouter {
       }, 'clear dictation history')
     )
 
+    // Screen capture handler
+    ipcMain.handle(
+      'capture-screen', 
+      ErrorUtils.wrapIPCHandler(async (event, options = {}) => {
+        return await screenCaptureService.captureScreenshot(options)
+      }, 'capture screen')
+    )
+
     console.log('IPC handlers registered successfully')
   }
 
@@ -306,6 +315,7 @@ class IPCRouter {
       'add-dictation-entry',
       'delete-dictation-entry',
       'clear-dictation-history',
+      'capture-screen',
     ]
 
     handlers.forEach((handler) => {

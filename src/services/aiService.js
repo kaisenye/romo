@@ -1,10 +1,9 @@
 // AI Service for OpenAI Responses API integration
 // Replaces Electron-based llama.cpp service with direct API calls
 
-const PROMPT_IDS = {
-  TRANSCRIPT_REFINEMENT: 'pmpt_68bc6fd28a588190b817d237a6bbb35f099666c01bed2c75',
-  AGENT_MODE: 'pmpt_68bca56aa8d08195b15609eb8b2d5a430ec28f3fe2133b33',
-}
+import OpenAI from 'openai'
+import screenCaptureService from './screenCaptureService'
+import promptService from './promptService'
 
 const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_OPENAI_BASE_URL || 'https://api.openai.com/v1',
@@ -15,6 +14,11 @@ const API_CONFIG = {
 class AIService {
   constructor() {
     this.validateConfig()
+    this.openai = new OpenAI({
+      apiKey: API_CONFIG.API_KEY,
+      baseURL: API_CONFIG.BASE_URL,
+      dangerouslyAllowBrowser: true,
+    })
   }
 
   validateConfig() {
@@ -24,44 +28,50 @@ class AIService {
   }
 
   /**
-   * Call OpenAI Responses API with prompt ID and transcript variable
+   * Call OpenAI Responses API with built prompt and optional image
    */
-  async callResponses(promptId, transcript) {
+  async callResponsesWithPrompt(systemPrompt, imageUrl = null) {
     if (!API_CONFIG.API_KEY) {
       throw new Error('OpenAI API key not configured')
     }
 
-    const requestBody = {
-      prompt: {
-        id: promptId,
-        variables: {
-          transcript: transcript,
-        },
-      },
+    // Build input content with text and optional image
+    const content = [{ type: 'input_text', text: systemPrompt }]
+
+    if (imageUrl) {
+      content.push({
+        type: 'input_image',
+        image_url: imageUrl,
+      })
     }
 
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/responses`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${API_CONFIG.API_KEY}`,
+      const response = await this.openai.responses.create({
+        model: 'gpt-5-nano',
+        reasoning: {
+          effort: 'minimal',
         },
-        body: JSON.stringify(requestBody),
-        signal: AbortSignal.timeout(API_CONFIG.TIMEOUT),
+        text: {
+          verbosity: 'low',
+        },
+        input: [
+          {
+            role: 'user',
+            content,
+          },
+        ],
       })
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(
-          `OpenAI API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`
-        )
-      }
-
-      const data = await response.json()
-      return this.extractContent(data)
+      return this.extractContent(response)
     } catch (error) {
       console.error('OpenAI API failed:', error.message)
+
+      // Fallback: retry without image if vision fails
+      if (imageUrl && this._isVisionError(error)) {
+        console.log('Vision processing failed, retrying without image context')
+        return await this.callResponsesWithPrompt(systemPrompt, null)
+      }
+
       throw error
     }
   }
@@ -91,19 +101,45 @@ class AIService {
   }
 
   /**
-   * Refine transcript text (replaces llamaRefineTranscript)
+   * Refine transcript text with optional screen context
    */
-  async refineTranscript(transcript) {
+  async refineTranscript(transcript, enableScreenContext = false) {
     if (!transcript || transcript.trim().length === 0) {
       return 'No transcript provided for refinement.'
     }
 
     try {
-      const refinedText = await this.callResponses(PROMPT_IDS.TRANSCRIPT_REFINEMENT, transcript)
+      let screenshotBase64 = null
+      let hasScreenContext = false
+
+      // Capture screen if enabled
+      if (enableScreenContext) {
+        console.log('📸 Capturing screen for transcript refinement...')
+        const screenshot = await this.captureScreen({
+          maxHeight: 384,
+          jpegQuality: 80,
+          useCache: true,
+        })
+
+        if (screenshot.success) {
+          screenshotBase64 = screenshot.base64
+          hasScreenContext = true
+          console.log('📸 Screen captured successfully for refinement')
+        } else {
+          console.warn('📸 Screen capture failed for refinement:', screenshot.error)
+        }
+      }
+
+      const sanitizedTranscript = promptService.sanitizeTranscript(transcript)
+      const prompt = promptService.buildTranscriptRefinementPrompt(sanitizedTranscript, hasScreenContext)
+      const imageUrl = screenshotBase64 ? `data:image/jpeg;base64,${screenshotBase64}` : null
+      const refinedText = await this.callResponsesWithPrompt(prompt, imageUrl)
+
       return {
         success: true,
         refinedTranscript: refinedText,
         originalTranscript: transcript,
+        hasScreenContext,
       }
     } catch (error) {
       console.error('Transcript refinement failed:', error.message)
@@ -117,19 +153,45 @@ class AIService {
   }
 
   /**
-   * Process agent request (for agent mode)
+   * Process agent request with optional screen context
    */
-  async processAgentRequest(transcript) {
+  async processAgentRequest(transcript, enableScreenContext = false) {
     if (!transcript || transcript.trim().length === 0) {
       throw new Error('No transcript provided for agent processing')
     }
 
     try {
-      const agentContent = await this.callResponses(PROMPT_IDS.AGENT_MODE, transcript)
+      let screenshotBase64 = null
+      let hasScreenContext = false
+
+      // Capture screen if enabled
+      if (enableScreenContext) {
+        console.log('📸 Capturing screen for agent processing...')
+        const screenshot = await this.captureScreen({
+          maxHeight: 384,
+          jpegQuality: 80,
+          useCache: true,
+        })
+
+        if (screenshot.success) {
+          screenshotBase64 = screenshot.base64
+          hasScreenContext = true
+          console.log('📸 Screen captured successfully for agent mode')
+        } else {
+          console.warn('📸 Screen capture failed for agent mode:', screenshot.error)
+        }
+      }
+
+      const sanitizedTranscript = promptService.sanitizeTranscript(transcript)
+      const prompt = promptService.buildAgentModePrompt(sanitizedTranscript, hasScreenContext)
+      const imageUrl = screenshotBase64 ? `data:image/jpeg;base64,${screenshotBase64}` : null
+      const agentContent = await this.callResponsesWithPrompt(prompt, imageUrl)
+
       return {
         success: true,
         originalTranscript: transcript,
         generatedContent: agentContent,
+        hasScreenContext,
       }
     } catch (error) {
       console.error('Agent processing failed:', error.message)
@@ -142,10 +204,35 @@ class AIService {
   }
 
   /**
+   * Capture screen for context (delegates to screenCaptureService)
+   */
+  async captureScreen(options = {}) {
+    return await screenCaptureService.captureScreenshot(options)
+  }
+
+  /**
    * Check if AI service is available
    */
   isAvailable() {
     return Boolean(API_CONFIG.API_KEY)
+  }
+
+  /**
+   * Check if error is vision-related
+   * @private
+   */
+  _isVisionError(error) {
+    const errorMessage = error.message?.toLowerCase() || ''
+    return (
+      errorMessage.includes('vision') ||
+      errorMessage.includes('image') ||
+      errorMessage.includes('multimodal') ||
+      errorMessage.includes('unsupported') ||
+      errorMessage.includes('image_url') ||
+      errorMessage.includes('400') ||
+      errorMessage.includes('invalid') ||
+      errorMessage.includes('not supported')
+    )
   }
 
   /**
@@ -157,6 +244,7 @@ class AIService {
       available: this.isAvailable(),
       apiKey: API_CONFIG.API_KEY ? '***configured***' : 'missing',
       baseUrl: API_CONFIG.BASE_URL,
+      visionSupported: true,
     }
   }
 }

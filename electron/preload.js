@@ -61,4 +61,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteDictationEntry: (id) => ipcRenderer.invoke('delete-dictation-entry', id),
   clearDictationHistory: () => ipcRenderer.invoke('clear-dictation-history'),
   getUserDataPath: () => ipcRenderer.invoke('get-user-data-path'),
+
+  // Screen capture operations
+  captureScreen: (options) => ipcRenderer.invoke('capture-screen', options),
 })

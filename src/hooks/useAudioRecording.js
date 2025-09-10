@@ -1,10 +1,17 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import aiService from '../services/aiService'
 
-// OpenAI Responses API refinement from environment variable
+// Feature flags from environment variables
 const ENABLE_AI_REFINEMENT = import.meta.env.VITE_ENABLE_AI_REFINEMENT === 'true'
+const ENABLE_SCREEN_CONTEXT = import.meta.env.VITE_ENABLE_SCREEN_CONTEXT === 'true'
 
-const useAudioRecording = () => {
+const useAudioRecording = (options = {}) => {
+  const {
+    enableScreenContext = ENABLE_SCREEN_CONTEXT,
+    captureScreenOnStart = true,
+    mode = 'transcript_refinement', // 'transcript_refinement' | 'agent_mode'
+  } = options
+
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState(null)
@@ -18,6 +25,7 @@ const useAudioRecording = () => {
   const chunksRef = useRef([])
   const recordingStartTimeRef = useRef(null)
   const allAudioDataRef = useRef([])
+  const currentScreenshotRef = useRef(null)
 
   // Audio level monitoring with improved sensitivity
   const updateAudioLevel = useCallback(() => {
@@ -179,6 +187,7 @@ const useAudioRecording = () => {
     return buffer
   }
 
+
   // Stop recording
   const stopRecording = useCallback(async () => {
     try {
@@ -297,7 +306,7 @@ const useAudioRecording = () => {
           // Agent mode processing using OpenAI Responses API
           if (isAgentMode && aiService.isAvailable() && finalText && finalText !== '[BLANK_AUDIO]') {
             try {
-              const agentResult = await aiService.processAgentRequest(finalText)
+              const agentResult = await aiService.processAgentRequest(finalText, enableScreenContext)
 
               if (agentResult.success && agentResult.generatedContent && agentResult.generatedContent.trim()) {
                 finalText = agentResult.generatedContent.trim()
@@ -318,7 +327,7 @@ const useAudioRecording = () => {
             finalText !== '[BLANK_AUDIO]'
           ) {
             try {
-              const aiResult = await aiService.refineTranscript(finalText)
+              const aiResult = await aiService.refineTranscript(finalText, enableScreenContext)
 
               if (aiResult.success && aiResult.refinedTranscript && aiResult.refinedTranscript.trim()) {
                 finalText = aiResult.refinedTranscript.trim()
@@ -413,6 +422,10 @@ const useAudioRecording = () => {
     startRecording,
     stopRecording,
     saveRecording,
+    // Screen context features (handled internally by aiService)
+    hasScreenContext: enableScreenContext,
+    enableScreenContext,
+    mode,
   }
 }
 
