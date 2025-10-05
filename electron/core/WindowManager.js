@@ -14,28 +14,25 @@ class WindowManager {
   }
 
   /**
-   * Get bottom center position for window - always return pill size position
-   * EXACT COPY from main.js lines 12-32
+   * Get top center position for window - positions pill below camera island
+   * Updated to position at top instead of bottom
    */
-  getBottomCenterPosition() {
+  getTopCenterPosition() {
     const { screen } = require('electron')
     const cursorPosition = screen.getCursorScreenPoint()
     const display = screen.getDisplayNearestPoint(cursorPosition)
 
-    const windowWidth = WINDOW_CONFIG.PILL.WIDTH // Was: 60
-    const windowHeight = WINDOW_CONFIG.PILL.HEIGHT // Was: 20
-    const margin = WINDOW_CONFIG.MARGIN // Was: 40
+    const windowWidth = WINDOW_CONFIG.PILL.WIDTH
+    const windowHeight = WINDOW_CONFIG.PILL.HEIGHT
+    const topMargin = WINDOW_CONFIG.TOP_MARGIN // Distance from top (below notch)
 
-    // Calculate bottom center position
+    // Calculate top center position
     const x = Math.floor((display.workAreaSize.width - windowWidth) / 2) + display.workArea.x
-    const y = display.workArea.y + display.workAreaSize.height - windowHeight - margin
+    const y = display.workArea.y + topMargin
 
     return {
       x: Math.max(display.workArea.x, Math.min(x, display.workArea.x + display.workAreaSize.width - windowWidth)),
-      y: Math.max(
-        display.workArea.y,
-        Math.min(y, display.workArea.y + display.workAreaSize.height - windowHeight - margin)
-      ),
+      y: Math.max(display.workArea.y, Math.min(y, display.workArea.y + display.workAreaSize.height - windowHeight)),
     }
   }
 
@@ -45,28 +42,21 @@ class WindowManager {
    */
   async showWindowOnCurrentDesktop() {
     if (this.mainWindow) {
-      // If window is already visible, just focus it
+      // If window is already visible, just return (don't focus)
       if (this.mainWindow.isVisible()) {
-        this.mainWindow.focus()
         return
       }
 
-      // First ensure the window is visible on all workspaces
-      if (process.platform === 'darwin') {
-        this.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-      }
-
-      // Always position at bottom center (ignore saved position)
-      const position = this.getBottomCenterPosition()
+      // Always position at top center (ignore saved position)
+      const position = this.getTopCenterPosition()
       this.mainWindow.setPosition(position.x, position.y)
-      console.log('Window positioned at bottom center:', position)
+      console.log('Window positioned at top center:', position)
 
       // Ensure window stays on top
       this.mainWindow.setAlwaysOnTop(true)
 
-      // Show and focus the window
-      this.mainWindow.show()
-      this.mainWindow.focus()
+      // Show the window without activating it to preserve user's input focus
+      this.mainWindow.showInactive()
     }
   }
 
@@ -101,16 +91,17 @@ class WindowManager {
       resizable: false, // Disable resizing to maintain fixed size
       skipTaskbar: true, // Don't show in taskbar/dock
       frame: false, // Remove all window controls including close/expand buttons
-      transparent: false, // Disable transparency for solid window
+      transparent: true, // Enable transparency for glass effect
       movable: false, // Prevent moving to keep it centered
       hasShadow: false, // Remove shadow for minimal appearance
       alwaysOnTop: true, // Keep window on top of all other applications
-      visibleOnAllWorkspaces: true, // Make window visible on all desktops/spaces
+      visibleOnAllWorkspaces: false, // Don't force window to all desktops - stay on current desktop
       focusable: false, // Prevent window from stealing focus
       minimizable: false, // Remove minimize button
       maximizable: false, // Remove maximize button
       closable: false, // Remove close button (controlled by shortcut only)
       roundedCorners: true, // Enable rounded corners for pill shape
+      backgroundColor: '#00000000', // Fully transparent background
     })
 
     // TODO: add it back if needed
@@ -143,17 +134,11 @@ class WindowManager {
       this.mainWindow.loadFile(filePath)
     }
 
-    // Show window when ready to prevent visual flash
+    // Position window but don't show yet - will show on first dictation trigger
     this.mainWindow.once('ready-to-show', () => {
-      // Show immediately in pill mode at bottom center
-      const position = this.getBottomCenterPosition()
+      // Position at top center but don't show
+      const position = this.getTopCenterPosition()
       this.mainWindow.setPosition(position.x, position.y)
-      this.mainWindow.show()
-
-      // Ensure window appears on current desktop when shown
-      if (process.platform === 'darwin') {
-        this.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-      }
     })
 
     // Handle window closed
@@ -182,20 +167,45 @@ class WindowManager {
       return { success: false, error: 'No window available' }
     }
 
-    const position = this.getBottomCenterPosition()
-    const fromSize = {
-      width: 50, // Start width
-      height: WINDOW_CONFIG.PILL.HEIGHT,
-    }
-    const toSize = {
-      width: WINDOW_CONFIG.EXPANDED.WIDTH,
-      height: WINDOW_CONFIG.EXPANDED.HEIGHT,
+    const position = this.getTopCenterPosition()
+
+    // Show window if hidden (first dictation trigger) with slide down animation
+    if (!this.mainWindow.isVisible()) {
+      // Position window above target position (for slide down effect)
+      const startY = position.y - 50
+      this.mainWindow.setPosition(position.x, startY)
+      this.mainWindow.setOpacity(0) // Start invisible
+
+      // Use showInactive to prevent stealing focus from user's current app
+      this.mainWindow.showInactive()
+
+      // Animate slide down to target position with fade in - KEEP PILL SIZE
+      await AnimationUtils.animateWindow(
+        this.mainWindow,
+        {
+          x: position.x,
+          y: startY,
+          width: WINDOW_CONFIG.PILL.WIDTH,
+          height: WINDOW_CONFIG.PILL.HEIGHT,
+          opacity: 0, // Start transparent
+        },
+        {
+          x: position.x,
+          y: position.y,
+          width: WINDOW_CONFIG.PILL.WIDTH,
+          height: WINDOW_CONFIG.PILL.HEIGHT,
+          opacity: 1, // End fully visible
+        },
+        {
+          duration: 150,
+          steps: 10,
+          easing: AnimationUtils.EASING.OUT_QUART,
+        }
+      )
     }
 
-    return await AnimationUtils.expandWindow(this.mainWindow, fromSize, toSize, position, {
-      duration: WINDOW_CONFIG.ANIMATION.EXPAND_DURATION,
-      steps: WINDOW_CONFIG.ANIMATION.EXPAND_STEPS,
-    })
+    // Don't expand - just return success
+    return { success: true }
   }
 
   /**
@@ -207,7 +217,7 @@ class WindowManager {
       return { success: false, error: 'No window available' }
     }
 
-    const targetPosition = this.getBottomCenterPosition()
+    const targetPosition = this.getTopCenterPosition()
     const currentBounds = this.mainWindow.getBounds()
     const targetSize = {
       width: WINDOW_CONFIG.PILL.WIDTH,
@@ -218,6 +228,57 @@ class WindowManager {
       duration: WINDOW_CONFIG.ANIMATION.SHRINK_DURATION,
       steps: WINDOW_CONFIG.ANIMATION.SHRINK_STEPS,
     })
+  }
+
+  /**
+   * Hide window with slide up animation
+   */
+  async hideWindow() {
+    if (!this.mainWindow) {
+      return { success: false, error: 'No window available' }
+    }
+
+    try {
+      const currentBounds = this.mainWindow.getBounds()
+
+      // Slide up beyond the top edge of screen (so it slides completely out of view)
+      const targetY = -50 // Move 50px above the screen top edge
+
+      // Animate slide up with fade out
+      await AnimationUtils.animateWindow(
+        this.mainWindow,
+        {
+          x: currentBounds.x,
+          y: currentBounds.y,
+          width: currentBounds.width,
+          height: currentBounds.height,
+          opacity: 1, // Start fully visible
+        },
+        {
+          x: currentBounds.x,
+          y: targetY,
+          width: currentBounds.width,
+          height: currentBounds.height,
+          opacity: 0, // End transparent
+        },
+        {
+          duration: 200, // Faster exit
+          steps: 20, // Fewer steps for snappier feel
+          easing: AnimationUtils.EASING.OUT_QUART,
+        }
+      )
+
+      // Hide window after animation
+      this.mainWindow.hide()
+
+      // Reset opacity for next show
+      this.mainWindow.setOpacity(1)
+
+      return { success: true }
+    } catch (error) {
+      console.error('Failed to hide window:', error)
+      return { success: false, error: error.message }
+    }
   }
 
   /**
@@ -253,6 +314,25 @@ class WindowManager {
    */
   isVisible() {
     return this.mainWindow && this.mainWindow.isVisible()
+  }
+
+  /**
+   * Show mode indicator in main window
+   */
+  async showModeIndicator() {
+    if (!this.mainWindow) {
+      return { success: false, error: 'No window available' }
+    }
+
+    // Show window if hidden, expand to show mode indicator
+    if (!this.mainWindow.isVisible()) {
+      await this.showWindowOnCurrentDesktop()
+    }
+
+    // Send event to renderer to show mode indicator UI
+    this.mainWindow.webContents.send('show-mode-indicator')
+
+    return { success: true }
   }
 }
 

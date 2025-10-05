@@ -82,6 +82,14 @@ class IPCRouter {
       return await this.windowManager.shrinkWindowToPill()
     })
 
+    ipcMain.handle('hide-window', async () => {
+      return await this.windowManager.hideWindow()
+    })
+
+    ipcMain.handle('show-mode-indicator', async () => {
+      return await this.windowManager.showModeIndicator()
+    })
+
     // Clipboard and paste operations
     ipcMain.handle('paste-to-focused-app', async (event, text) => {
       try {
@@ -277,7 +285,7 @@ class IPCRouter {
 
     // Screen capture handler
     ipcMain.handle(
-      'capture-screen', 
+      'capture-screen',
       ErrorUtils.wrapIPCHandler(async (event, options = {}) => {
         return await screenCaptureService.captureScreenshot(options)
       }, 'capture screen')

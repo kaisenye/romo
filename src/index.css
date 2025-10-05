@@ -14,11 +14,11 @@
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    @apply bg-black text-white;
+    @apply bg-transparent text-white;
   }
 
   body {
-    @apply bg-black text-white;
+    @apply bg-transparent text-white;
   }
 
   /* Improved focus styles for accessibility */

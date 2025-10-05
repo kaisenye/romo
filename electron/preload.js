@@ -37,6 +37,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Window expansion operations
   expandWindowForRecording: () => ipcRenderer.invoke('expand-window-for-recording'),
   shrinkWindowToPill: () => ipcRenderer.invoke('shrink-window-to-pill'),
+  hideWindow: () => ipcRenderer.invoke('hide-window'),
+  showModeIndicator: () => ipcRenderer.invoke('show-mode-indicator'),
+  onShowModeIndicator: (callback) => ipcRenderer.on('show-mode-indicator', callback),
 
   // Global shortcut events
   onGlobalShortcutStartRecording: (callback) => ipcRenderer.on('global-shortcut-start-recording', callback),

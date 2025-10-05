@@ -28,7 +28,7 @@ const WINDOW_CONFIG = {
   },
 
   // Positioning
-  MARGIN: 40,
+  TOP_MARGIN: 5,
 
   // Animation
   ANIMATION: {

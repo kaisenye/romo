@@ -14,23 +14,23 @@ class AnimationUtils {
       const c3 = c1 + 1
       return 1 + c3 * Math.pow(progress - 1, 3) + c1 * Math.pow(progress - 1, 2)
     },
-    
-    // easeOutQuart - for shrinking animation  
+
+    // easeOutQuart - for shrinking animation
     OUT_QUART: (progress) => {
       return 1 - Math.pow(1 - progress, 4)
     },
-    
+
     // Linear - for testing
     LINEAR: (progress) => {
       return progress
-    }
+    },
   }
 
   /**
    * Animate window size and position with spring easing
    * @param {BrowserWindow} window - Electron window to animate
-   * @param {Object} from - Starting state {width, height, x, y}
-   * @param {Object} to - Target state {width, height, x, y}
+   * @param {Object} from - Starting state {width, height, x, y, opacity?}
+   * @param {Object} to - Target state {width, height, x, y, opacity?}
    * @param {Object} options - Animation options
    * @param {number} options.duration - Animation duration in ms
    * @param {number} options.steps - Number of animation steps
@@ -38,11 +38,7 @@ class AnimationUtils {
    * @returns {Promise<void>}
    */
   static async animateWindow(window, from, to, options = {}) {
-    const {
-      duration = 300,
-      steps = 20,
-      easing = AnimationUtils.EASING.OUT_BACK
-    } = options
+    const { duration = 300, steps = 20, easing = AnimationUtils.EASING.OUT_BACK } = options
 
     if (!window) {
       console.warn('AnimationUtils: No window provided for animation')
@@ -50,34 +46,45 @@ class AnimationUtils {
     }
 
     const stepDuration = duration / steps
-    
+
+    // Check if opacity animation is needed
+    const animateOpacity = from.opacity !== undefined && to.opacity !== undefined
+
     // Create animation promises array
     const animationPromises = []
-    
+
     for (let i = 0; i <= steps; i++) {
       const progress = i / steps
       const easedProgress = Math.max(0, Math.min(1, easing(progress)))
-      
+
       const currentState = {
         width: from.width + (to.width - from.width) * easedProgress,
         height: from.height + (to.height - from.height) * easedProgress,
         x: from.x + (to.x - from.x) * easedProgress,
-        y: from.y + (to.y - from.y) * easedProgress
+        y: from.y + (to.y - from.y) * easedProgress,
       }
-      
+
+      if (animateOpacity) {
+        currentState.opacity = from.opacity + (to.opacity - from.opacity) * easedProgress
+      }
+
       const promise = new Promise((resolve) => {
         setTimeout(() => {
           if (window && !window.isDestroyed()) {
             window.setSize(Math.round(currentState.width), Math.round(currentState.height))
             window.setPosition(Math.round(currentState.x), Math.round(currentState.y))
+
+            if (animateOpacity) {
+              window.setOpacity(currentState.opacity)
+            }
           }
           resolve()
         }, i * stepDuration)
       })
-      
+
       animationPromises.push(promise)
     }
-    
+
     // Wait for all animation steps to complete
     await Promise.all(animationPromises)
   }
@@ -92,7 +99,7 @@ class AnimationUtils {
   static getCenteredPosition(currentPos, currentSize, targetSize) {
     return {
       x: currentPos.x - (targetSize.width - currentSize.width) / 2,
-      y: currentPos.y - (targetSize.height - currentSize.height) / 2
+      y: currentPos.y - (targetSize.height - currentSize.height) / 2,
     }
   }
 
@@ -105,14 +112,14 @@ class AnimationUtils {
         width: sizes.from.width,
         height: sizes.from.height,
         x: basePosition.x,
-        y: basePosition.y
+        y: basePosition.y,
       },
       to: {
         width: sizes.to.width,
         height: sizes.to.height,
         x: basePosition.x - (sizes.to.width - sizes.from.width) / 2,
-        y: basePosition.y - (sizes.to.height - sizes.from.height) / 2
-      }
+        y: basePosition.y - (sizes.to.height - sizes.from.height) / 2,
+      },
     }
   }
 
@@ -129,15 +136,15 @@ class AnimationUtils {
     try {
       const states = AnimationUtils.createTransitionStates(basePosition, {
         from: fromSize,
-        to: toSize
+        to: toSize,
       })
-      
+
       await AnimationUtils.animateWindow(window, states.from, states.to, {
         duration: options.duration || 300,
         steps: options.steps || 20,
-        easing: AnimationUtils.EASING.OUT_BACK
+        easing: AnimationUtils.EASING.OUT_BACK,
       })
-      
+
       console.log('Window expansion animation completed')
       return { success: true }
     } catch (error) {
@@ -161,22 +168,22 @@ class AnimationUtils {
         width: fromBounds.width,
         height: fromBounds.height,
         x: fromBounds.x,
-        y: fromBounds.y
+        y: fromBounds.y,
       }
-      
+
       const to = {
         width: toSize.width,
         height: toSize.height,
         x: targetPosition.x,
-        y: targetPosition.y
+        y: targetPosition.y,
       }
-      
+
       await AnimationUtils.animateWindow(window, from, to, {
         duration: options.duration || 200,
         steps: options.steps || 12,
-        easing: AnimationUtils.EASING.OUT_QUART
+        easing: AnimationUtils.EASING.OUT_QUART,
       })
-      
+
       console.log('Window shrinking animation completed')
       return { success: true }
     } catch (error) {
