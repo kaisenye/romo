@@ -62,7 +62,7 @@ const SERVER_CONFIG = {
 // AI Model Configuration
 const AI_MODELS = {
   WHISPER: {
-    PREFERRED_MODELS: ['ggml-base.en.bin', 'ggml-base.bin', 'ggml-small.en.bin', 'ggml-tiny.en.bin'],
+    PREFERRED_MODELS: ['ggml-small.en.bin', 'ggml-small.bin'],
   },
   LLAMA: {
     PREFERRED_MODELS: [

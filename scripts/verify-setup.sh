@@ -72,13 +72,19 @@ echo "✅ Found $MODEL_COUNT model(s)"
 # Test transcription with sample
 echo "🎵 Testing transcription..."
 if [ -f "whisper.cpp/samples/jfk.wav" ]; then
-    echo "   Testing with JFK sample..."
-    $WHISPER_BINARY -m whisper.cpp/models/ggml-base.en.bin -f whisper.cpp/samples/jfk.wav --no-prints > /tmp/whisper_test.txt 2>&1
-    if [ $? -eq 0 ]; then
-        echo "✅ Transcription test passed"
-        echo "   Sample output: $(head -1 /tmp/whisper_test.txt)"
+    echo "   Testing with JFK sample using small.en model..."
+    if [ -f "whisper.cpp/models/ggml-small.en.bin" ]; then
+        $WHISPER_BINARY -m whisper.cpp/models/ggml-small.en.bin -f whisper.cpp/samples/jfk.wav --no-prints > /tmp/whisper_test.txt 2>&1
+        if [ $? -eq 0 ]; then
+            echo "✅ Transcription test passed"
+            echo "   Sample output: $(head -1 /tmp/whisper_test.txt)"
+        else
+            echo "⚠️  Transcription test failed, but setup seems OK"
+        fi
     else
-        echo "⚠️  Transcription test failed, but setup seems OK"
+        echo "❌ Error: small.en model not found"
+        echo "   Run: npm run setup:whisper"
+        exit 1
     fi
 else
     echo "⚠️  No sample audio found, skipping transcription test"

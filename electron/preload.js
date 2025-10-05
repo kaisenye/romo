@@ -17,11 +17,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   aiGetStatus: () => ipcRenderer.invoke('ai-get-status'),
   aiShutdown: () => ipcRenderer.invoke('ai-shutdown'),
 
-  // LLM Service operations
-  llamaRefineTranscript: (transcript) => ipcRenderer.invoke('llama-refine-transcript', transcript),
+  // LLM Service operations (disabled - now using direct OpenAI API calls from React)
+  // llamaRefineTranscript: (transcript) => ipcRenderer.invoke('llama-refine-transcript', transcript),
 
-  // Agent Mode operations (using LlamaCpp service)
-  agentProcessRequest: (transcript) => ipcRenderer.invoke('agent-process-request', transcript),
+  // Agent Mode operations (disabled - now using direct OpenAI API calls from React)
+  // agentProcessRequest: (transcript) => ipcRenderer.invoke('agent-process-request', transcript),
 
   // Audio processing methods for React components (aliases for convenience)
   processAudioChunk: (audioBuffer, sampleRate = 16000) =>
@@ -50,10 +50,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Notifications
   showNotification: (title, body) => ipcRenderer.invoke('show-notification', title, body),
-  
+
   // Clipboard and paste operations
   pasteToFocusedApp: (text) => ipcRenderer.invoke('paste-to-focused-app', text),
-  
+
   // Dictation History operations
   getDictationHistory: () => ipcRenderer.invoke('get-dictation-history'),
   getDictationStats: () => ipcRenderer.invoke('get-dictation-stats'),
@@ -61,4 +61,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteDictationEntry: (id) => ipcRenderer.invoke('delete-dictation-entry', id),
   clearDictationHistory: () => ipcRenderer.invoke('clear-dictation-history'),
   getUserDataPath: () => ipcRenderer.invoke('get-user-data-path'),
+
+  // Screen capture operations
+  captureScreen: (options) => ipcRenderer.invoke('capture-screen', options),
 })

@@ -5,18 +5,11 @@ import SoundWaveVisualizer from './SoundWaveVisualizer'
 import '../../styles/animations.css'
 
 const DictationView = () => {
-  console.log('=== DictationView component rendered ===')
-
-  const { error } = useDictationStore()
-  // TODO: MVP: Agent mode temporarily disabled - restore for full release
-  // const { error, isAgentMode, toggleAgentMode } = useDictationStore()
-  // console.log('🔍 Current isAgentMode state in component:', isAgentMode)
-  const isAgentMode = false // TODO: MVP: Force disabled for now
+  const { error, isAgentMode, toggleAgentMode } = useDictationStore()
   const [isExpanded, setIsExpanded] = useState(false)
   const [showProcessingWave, setShowProcessingWave] = useState(false)
 
   // Use the proper audio recording hook
-  console.log('=== Calling useAudioRecording hook ===')
   const {
     isRecording,
     isProcessing,
@@ -26,12 +19,6 @@ const DictationView = () => {
     stopRecording,
     saveRecording,
   } = useAudioRecording()
-
-  console.log('=== useAudioRecording returned ===', { isRecording, isProcessing, audioLevel, recordingError })
-
-  // Log errors
-  if (error) console.log('Store error:', error)
-  if (recordingError) console.log('Recording error:', recordingError)
 
   // Ref to track if we're currently handling a toggle to prevent double-triggers
   const isHandlingToggleRef = useRef(false)
@@ -44,14 +31,8 @@ const DictationView = () => {
     recordingStateRef.current = isRecording
   }, [isRecording])
 
-  // TODO: MVP: Agent mode state monitoring temporarily commented out - restore for full release
-  // useEffect(() => {
-  //   console.log('🔄 Agent mode state changed to:', isAgentMode)
-  // }, [isAgentMode])
-
   // Press and hold behavior handlers
   const handleStartRecording = useCallback(async () => {
-    console.log('=== handleStartRecording called ===')
     try {
       // Expand window first
       if (window.electronAPI && window.electronAPI.expandWindowForRecording) {
@@ -59,9 +40,7 @@ const DictationView = () => {
         setIsExpanded(true)
       }
 
-      console.log('Calling startRecording...')
       await startRecording()
-      console.log('startRecording completed successfully')
     } catch (error) {
       console.error('Failed to start recording:', error)
       useDictationStore.getState().setError('Failed to access microphone')
@@ -69,9 +48,7 @@ const DictationView = () => {
   }, [startRecording])
 
   const handleStopRecording = useCallback(async () => {
-    console.log('=== handleStopRecording called ===')
     try {
-      console.log('Calling stopRecording...')
       await stopRecording()
 
       // Shrink window but show processing wave
@@ -81,10 +58,8 @@ const DictationView = () => {
         setShowProcessingWave(true) // Show processing wave in pill mode
       }
 
-      console.log('Calling saveRecording...')
       // Save the recording (this will trigger final processing)
       await saveRecording('dictation-session')
-      console.log('saveRecording completed successfully')
 
       // After processing is complete, return to circle
       setShowProcessingWave(false)
@@ -101,7 +76,6 @@ const DictationView = () => {
       if (window.electronAPI) {
         try {
           const whisperStatus = await window.electronAPI.aiGetStatus()
-          console.log('Whisper service status:', whisperStatus)
         } catch (error) {
           console.error('Error checking service status:', error)
         }
@@ -111,39 +85,29 @@ const DictationView = () => {
     checkServices()
   }, [])
 
-  // TODO: MVP: Agent mode toggle temporarily disabled - restore for full release
-  // const handleToggleAgentMode = useCallback(() => {
-  //   console.log('=== Toggling agent mode ===')
-  //   console.log('Current agent mode state:', isAgentMode)
-  //
-  //   if (isHandlingToggleRef.current) {
-  //     console.log('⚠️ Toggle already in progress, skipping')
-  //     return
-  //   }
-  //
-  //   isHandlingToggleRef.current = true
-  //   toggleAgentMode()
-  //   console.log('Agent mode toggled, new state will be:', !isAgentMode)
-  //
-  //   setTimeout(() => {
-  //     isHandlingToggleRef.current = false
-  //   }, 500)
-  // }, [toggleAgentMode, isAgentMode])
-
-  // Set up global shortcuts once on mount
-  useEffect(() => {
-    console.log('=== Setting up event listeners ===')
-    if (!window.electronAPI) {
-      console.warn('electronAPI not available')
+  // Agent mode toggle handler
+  const handleToggleAgentMode = useCallback(() => {
+    if (isHandlingToggleRef.current) {
       return
     }
 
-    console.log('electronAPI is available, setting up recording listeners')
+    isHandlingToggleRef.current = true
+    toggleAgentMode()
+
+    setTimeout(() => {
+      isHandlingToggleRef.current = false
+    }, 500)
+  }, [toggleAgentMode, isAgentMode])
+
+  // Set up global shortcuts once on mount
+  useEffect(() => {
+    if (!window.electronAPI) {
+      return
+    }
 
     // Set up start recording listener
     if (window.electronAPI.onGlobalShortcutStartRecording) {
       window.electronAPI.onGlobalShortcutStartRecording(() => {
-        console.log('=== Received global-shortcut-start-recording event in React ===')
         if (!isHandlingToggleRef.current) {
           isHandlingToggleRef.current = true
           handleStartRecording()
@@ -154,7 +118,6 @@ const DictationView = () => {
     // Set up stop recording listener
     if (window.electronAPI.onGlobalShortcutStopRecording) {
       window.electronAPI.onGlobalShortcutStopRecording(() => {
-        console.log('=== Received global-shortcut-stop-recording event in React ===')
         if (isHandlingToggleRef.current) {
           isHandlingToggleRef.current = false
           handleStopRecording()
@@ -162,45 +125,37 @@ const DictationView = () => {
       })
     }
 
-    // TODO: MVP: Agent mode toggle listener temporarily disabled - restore for full release
-    // if (window.electronAPI.onGlobalShortcutToggleAgentMode) {
-    //   console.log('🎯 Setting up agent mode toggle listener')
-    //   window.electronAPI.onGlobalShortcutToggleAgentMode(() => {
-    //     console.log('🚀 === Received global-shortcut-toggle-agent-mode event in React ===')
-    //     handleToggleAgentMode()
-    //   })
-    // } else {
-    //   console.warn('⚠️ onGlobalShortcutToggleAgentMode not available in electronAPI')
-    // }
-
-    console.log('Event listeners set up successfully')
+    // Agent mode toggle listener
+    if (window.electronAPI.onGlobalShortcutToggleAgentMode) {
+      window.electronAPI.onGlobalShortcutToggleAgentMode(() => {
+        handleToggleAgentMode()
+      })
+    }
 
     // Cleanup function
     return () => {
       // Note: In a real implementation, you might want to remove listeners
       // but the current electronAPI doesn't expose removeListener methods
     }
-  }, [handleStartRecording, handleStopRecording]) // TODO: MVP: Removed agent mode dependency - restore for full release
+  }, [handleStartRecording, handleStopRecording, handleToggleAgentMode]) // Agent mode dependency restored
 
   // Update store with recording state
   useEffect(() => {
     useDictationStore.getState().setRecordingState(isRecording, isProcessing)
   }, [isRecording, isProcessing])
 
-  // Handle recording errors
+  // Handle recording errors (avoid re-render loops)
   useEffect(() => {
-    if (recordingError) {
+    if (recordingError && recordingError !== error) {
       useDictationStore.getState().setError(recordingError)
     }
-  }, [recordingError])
+  }, [recordingError, error])
 
   return (
     <div
-      className="w-full h-full flex items-center justify-center bg-black rounded-full"
-      // TODO: MVP: Agent mode border temporarily removed - restore for full release
-      // className={`w-full h-full flex items-center justify-center bg-black rounded-full ${
-      //   isAgentMode ? 'border-2 border-lime-400' : ''
-      // }`}
+      className={`w-full h-full flex items-center justify-center bg-black rounded-full ${
+        isAgentMode ? 'border-2 border-lime-400' : ''
+      }`}
     >
       {/* Draggable area - disabled in pill mode */}
       {isExpanded && <div className="absolute inset-0 cursor-move" style={{ WebkitAppRegion: 'drag' }} />}
@@ -210,7 +165,7 @@ const DictationView = () => {
         {isExpanded ? (
           // Expanded view with sound wave
           <div className="flex items-center justify-center rounded-full">
-            <SoundWaveVisualizer audioLevel={audioLevel} isRecording={isRecording} isAgentMode={false} />
+            <SoundWaveVisualizer audioLevel={audioLevel} isRecording={isRecording} isAgentMode={isAgentMode} />
 
             {/* Processing indicator */}
             {isProcessing && (
@@ -230,14 +185,32 @@ const DictationView = () => {
           // Pill mode - show different states
           <div className="w-full h-full flex items-center justify-center">
             {showProcessingWave ? (
-              // Processing state - waving loader animation
+              // Processing state - waving loader animation (lime for agent mode, blue for normal)
               <div className="flex items-center space-x-0.5">
-                <div className="w-0.5 h-1 bg-blue-400 rounded-full wave-bar" style={{ animationDelay: '0ms' }} />
-                <div className="w-0.5 h-1 bg-blue-400 rounded-full wave-bar" style={{ animationDelay: '100ms' }} />
-                <div className="w-0.5 h-1 bg-blue-400 rounded-full wave-bar" style={{ animationDelay: '200ms' }} />
-                <div className="w-0.5 h-1 bg-blue-400 rounded-full wave-bar" style={{ animationDelay: '300ms' }} />
-                <div className="w-0.5 h-1 bg-blue-400 rounded-full wave-bar" style={{ animationDelay: '400ms' }} />
-                <div className="w-0.5 h-1 bg-blue-400 rounded-full wave-bar" style={{ animationDelay: '500ms' }} />
+                <div
+                  className={`w-0.5 h-1 rounded-full wave-bar ${isAgentMode ? 'bg-lime-400' : 'bg-blue-400'}`}
+                  style={{ animationDelay: '0ms' }}
+                />
+                <div
+                  className={`w-0.5 h-1 rounded-full wave-bar ${isAgentMode ? 'bg-lime-400' : 'bg-blue-400'}`}
+                  style={{ animationDelay: '100ms' }}
+                />
+                <div
+                  className={`w-0.5 h-1 rounded-full wave-bar ${isAgentMode ? 'bg-lime-400' : 'bg-blue-400'}`}
+                  style={{ animationDelay: '200ms' }}
+                />
+                <div
+                  className={`w-0.5 h-1 rounded-full wave-bar ${isAgentMode ? 'bg-lime-400' : 'bg-blue-400'}`}
+                  style={{ animationDelay: '300ms' }}
+                />
+                <div
+                  className={`w-0.5 h-1 rounded-full wave-bar ${isAgentMode ? 'bg-lime-400' : 'bg-blue-400'}`}
+                  style={{ animationDelay: '400ms' }}
+                />
+                <div
+                  className={`w-0.5 h-1 rounded-full wave-bar ${isAgentMode ? 'bg-lime-400' : 'bg-blue-400'}`}
+                  style={{ animationDelay: '500ms' }}
+                />
               </div>
             ) : (
               // Default state - simple circle

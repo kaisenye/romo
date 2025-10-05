@@ -1,18 +1,21 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
+import aiService from '../services/aiService'
 
-// LLaMA.cpp refinement now uses improved /v1/chat/completions endpoint
-// with Mistral-7B-Instruct model and better prompting for grammar correction
-const ENABLE_LLAMA_REFINEMENT = false
+// Feature flags from environment variables
+const ENABLE_AI_REFINEMENT = import.meta.env.VITE_ENABLE_AI_REFINEMENT === 'true'
+const ENABLE_SCREEN_CONTEXT = import.meta.env.VITE_ENABLE_SCREEN_CONTEXT === 'true'
 
-const useAudioRecording = () => {
-  console.log('=== useAudioRecording hook initialized ===')
+const useAudioRecording = (options = {}) => {
+  const {
+    enableScreenContext = ENABLE_SCREEN_CONTEXT,
+    captureScreenOnStart = true,
+    mode = 'transcript_refinement', // 'transcript_refinement' | 'agent_mode'
+  } = options
 
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState(null)
   const [audioLevel, setAudioLevel] = useState(0)
-
-  console.log('=== Hook state initialized ===', { isRecording, isProcessing, error, audioLevel })
 
   const mediaRecorderRef = useRef(null)
   const streamRef = useRef(null)
@@ -22,6 +25,7 @@ const useAudioRecording = () => {
   const chunksRef = useRef([])
   const recordingStartTimeRef = useRef(null)
   const allAudioDataRef = useRef([])
+  const currentScreenshotRef = useRef(null)
 
   // Audio level monitoring with improved sensitivity
   const updateAudioLevel = useCallback(() => {
@@ -61,12 +65,8 @@ const useAudioRecording = () => {
     return rms > speechThreshold
   }, [])
 
-  // No longer needed - we'll process all audio at once at the end
-
   // Start recording with improved logic
   const startRecording = useCallback(async () => {
-    console.log('=== useAudioRecording startRecording called ===')
-    console.log('Current isRecording state:', isRecording)
     try {
       if (isRecording) {
         console.warn('Recording is already active')
@@ -77,7 +77,6 @@ const useAudioRecording = () => {
       allAudioDataRef.current = []
       recordingStartTimeRef.current = Date.now()
 
-      console.log('Requesting microphone access...')
       // Request microphone access with better audio settings
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -89,7 +88,6 @@ const useAudioRecording = () => {
           volume: 1.0,
         },
       })
-      console.log('Microphone access granted successfully')
 
       streamRef.current = stream
 
@@ -144,9 +142,7 @@ const useAudioRecording = () => {
 
       // Start recording with longer chunks for full recording
       mediaRecorder.start(10000) // 10 second chunks for full recording
-      console.log('Setting isRecording to true')
       setIsRecording(true)
-      console.log('Recording started successfully!')
     } catch (err) {
       console.error('Error starting recording:', err)
       setError(err.message)
@@ -190,6 +186,7 @@ const useAudioRecording = () => {
 
     return buffer
   }
+
 
   // Stop recording
   const stopRecording = useCallback(async () => {
@@ -267,17 +264,12 @@ const useAudioRecording = () => {
 
   // Save complete recording and process all audio at once
   const saveRecording = useCallback(async (meetingId) => {
-    console.log('=== saveRecording called ===')
-    console.log('Audio data length:', allAudioDataRef.current.length)
-
-    // TODO: MVP: Agent mode temporarily disabled - restore for full release
-    // const isAgentMode = window.useDictationStore ? window.useDictationStore.getState().isAgentMode : false
-    // console.log('Agent mode enabled:', isAgentMode)
-    const isAgentMode = false
+    // Agent mode enabled with OpenAI integration
+    const isAgentMode = window.useDictationStore ? window.useDictationStore.getState().isAgentMode : false
 
     if (allAudioDataRef.current.length === 0) {
-      console.warn('No audio data to save')
-      throw new Error('No audio data to save')
+      // Silent recording - don't throw error, just return empty result
+      return { success: true, result: { text: '' } }
     }
 
     try {
@@ -287,13 +279,10 @@ const useAudioRecording = () => {
       const audioData = allAudioDataRef.current
       const sampleRate = 16000
 
-      console.log(`Processing ${audioData.length} audio samples at ${sampleRate}Hz`)
-
       // Initialize AI service if needed
       if (window.electronAPI) {
         const status = await window.electronAPI.aiGetStatus()
         if (!status.initialized) {
-          console.log('Initializing AI service...')
           const initResult = await window.electronAPI.aiInitialize()
           if (!initResult.success) {
             throw new Error('Failed to initialize AI service: ' + initResult.error)
@@ -301,85 +290,56 @@ const useAudioRecording = () => {
         }
 
         // Convert audio data to WAV format and process
-        console.log('Converting audio to WAV format...')
         const wavBuffer = createWavBuffer(audioData, sampleRate)
         const uint8Array = new Uint8Array(wavBuffer)
         const hexString = Array.from(uint8Array)
           .map((byte) => byte.toString(16).padStart(2, '0'))
           .join('')
 
-        console.log('Sending audio to Whisper for transcription...')
         const transcriptStartTime = Date.now() // Track processing start time
         const result = await window.electronAPI.processAudioChunk(hexString, sampleRate)
-        console.log('Whisper result:', result)
 
         let finalText = ''
         if (result && result.success && result.result && result.result.text) {
           finalText = result.result.text.trim()
-          console.log('Raw transcription:', finalText)
 
-          // TODO: MVP: Agent mode processing temporarily disabled - restore for full release
-          // if (isAgentMode && finalText && finalText !== '[BLANK_AUDIO]') {
-          //   // Agent mode: Process as request and generate content
-          //   try {
-          //     console.log('Processing with Agent mode...', finalText)
-          //     const agentResult = await window.electronAPI.agentProcessRequest(finalText)
-          //     console.log('Agent processing result:', agentResult)
-          //
-          //     if (agentResult.success && agentResult.generatedContent && agentResult.generatedContent.trim()) {
-          //       const originalTranscript = finalText
-          //       finalText = agentResult.generatedContent.trim()
-          //       console.log('Agent processing successful:')
-          //       console.log('  Original request:', originalTranscript)
-          //       console.log('  Generated content:', finalText.substring(0, 200) + (finalText.length > 200 ? '...' : ''))
-          //     } else {
-          //       console.log('Agent processing failed, using fallback content')
-          //       if (agentResult.fallbackContent) {
-          //         finalText = agentResult.fallbackContent.trim()
-          //       }
-          //       if (agentResult.error) {
-          //         console.log('Agent error:', agentResult.error)
-          //       }
-          //     }
-          //   } catch (agentError) {
-          //     console.warn('Agent processing failed, using original transcription:', agentError.message)
-          //     // Keep original transcription as fallback
-          //   }
-          // } else if (!isAgentMode) {
-          
-          // TODO: MVP: Normal mode is now default behavior - agent mode processing disabled above
-          if (
-            ENABLE_LLAMA_REFINEMENT &&
-              window.electronAPI.llamaRefineTranscript &&
-              finalText &&
-              finalText !== '[BLANK_AUDIO]'
-            ) {
-              try {
-                console.log('Refining text with LLaMA.cpp...', finalText)
-                const llamaResult = await window.electronAPI.llamaRefineTranscript(finalText)
-                console.log('LLaMA refinement result:', llamaResult)
+          // Agent mode processing using OpenAI Responses API
+          if (isAgentMode && aiService.isAvailable() && finalText && finalText !== '[BLANK_AUDIO]') {
+            try {
+              const agentResult = await aiService.processAgentRequest(finalText, enableScreenContext)
 
-                if (llamaResult.success && llamaResult.refinedTranscript && llamaResult.refinedTranscript.trim()) {
-                  const originalText = finalText
-                  finalText = llamaResult.refinedTranscript.trim()
-                  console.log('Text refined successfully:')
-                  console.log('  Original:', originalText)
-                  console.log('  Refined: ', finalText)
-                } else {
-                  console.log('LLaMA refinement returned no useful result:', llamaResult)
-                  if (llamaResult.error) {
-                    console.log('LLaMA error:', llamaResult.error)
-                  }
-                }
-              } catch (refinementError) {
-                console.warn('LLaMA refinement failed, using original text:', refinementError.message)
+              if (agentResult.success && agentResult.generatedContent && agentResult.generatedContent.trim()) {
+                finalText = agentResult.generatedContent.trim()
+              } else if (agentResult.fallbackContent) {
+                finalText = agentResult.fallbackContent.trim()
               }
+            } catch (agentError) {
+              console.warn('Agent processing failed, using original transcription:', agentError.message)
             }
+          }
+
+          // Normal mode refinement (only if agent mode is disabled)
+          if (
+            !isAgentMode &&
+            ENABLE_AI_REFINEMENT &&
+            aiService.isAvailable() &&
+            finalText &&
+            finalText !== '[BLANK_AUDIO]'
+          ) {
+            try {
+              const aiResult = await aiService.refineTranscript(finalText, enableScreenContext)
+
+              if (aiResult.success && aiResult.refinedTranscript && aiResult.refinedTranscript.trim()) {
+                finalText = aiResult.refinedTranscript.trim()
+              }
+            } catch (refinementError) {
+              console.warn('AI refinement failed, using original text:', refinementError.message)
+            }
+          }
         }
 
         // Auto-paste to focused input field
         if (finalText && finalText !== '[BLANK_AUDIO]') {
-          console.log('Pasting text to focused input:', finalText)
           await pasteToFocusedInput(finalText)
         }
 
@@ -395,25 +355,17 @@ const useAudioRecording = () => {
             const startTime = recordingStartTimeRef.current || recordingEndTime
             const duration = Math.round((recordingEndTime - startTime) / 1000) // Duration in seconds
             const processingTime = Date.now() - transcriptStartTime // Processing time in ms
-            
+
             const historyEntry = {
               timestamp: new Date().toISOString(),
               text: finalText,
               duration: duration,
-              processingTime: processingTime
+              processingTime: processingTime,
             }
 
-            console.log('Saving dictation entry to history:', {
-              duration: `${duration}s`,
-              processingTime: `${processingTime}ms`,
-              textLength: finalText.length
-            })
-
-            // Save to history via store action (which handles IPC)
             await window.useDictationStore.getState().addDictationEntry(historyEntry)
           } catch (historyError) {
             console.warn('Failed to save dictation to history:', historyError.message)
-            // Don't fail the entire operation if history saving fails
           }
         }
 
@@ -421,8 +373,9 @@ const useAudioRecording = () => {
         allAudioDataRef.current = []
         chunksRef.current = []
 
-        console.log('Recording processing completed successfully')
         return { success: true, result: { text: finalText } }
+      } else {
+        throw new Error('Electron API not available')
       }
     } catch (err) {
       console.error('Error processing complete recording:', err)
@@ -436,26 +389,21 @@ const useAudioRecording = () => {
   const pasteToFocusedInput = useCallback(async (text) => {
     try {
       if (window.electronAPI && window.electronAPI.pasteToFocusedApp) {
-        console.log('Pasting to focused app:', text)
         const result = await window.electronAPI.pasteToFocusedApp(text)
 
         if (result.success) {
-          console.log('Text pasted successfully to focused app')
           // Show brief notification
           if (window.electronAPI.showNotification) {
             await window.electronAPI.showNotification('Dictation Complete', `"${text}"`)
           }
         } else {
           console.warn('Failed to paste to focused app:', result.error)
-          console.log('Transcribed text (copy manually):', text)
         }
       } else {
         console.warn('pasteToFocusedApp not available')
-        console.log('Transcribed text (copy manually):', text)
       }
     } catch (error) {
-      console.warn('Failed to paste to focused input:', error.message)
-      console.log('Transcribed text (copy manually):', text)
+      // Silent fail for paste operations
     }
   }, [])
 
@@ -474,6 +422,10 @@ const useAudioRecording = () => {
     startRecording,
     stopRecording,
     saveRecording,
+    // Screen context features (handled internally by aiService)
+    hasScreenContext: enableScreenContext,
+    enableScreenContext,
+    mode,
   }
 }
 
