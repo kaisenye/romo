@@ -1,14 +1,14 @@
 const { BrowserWindow } = require('electron')
 const path = require('path')
-const { WINDOW_CONFIG, APP_CONFIG } = require('../utils/Constants.js')
-const AnimationUtils = require('../utils/AnimationUtils.js')
+const { WINDOW_CONFIG, APP_CONFIG } = require('../../utils/Constants.js')
+const AnimationUtils = require('../../utils/AnimationUtils.js')
 
 /**
- * WindowManager - Extracted from main.js
+ * PillWindowManager - Manages the main dictation pill window
  * Handles all window operations, positioning, and animations
  * PRESERVES EXACT FUNCTIONALITY from original main.js
  */
-class WindowManager {
+class PillWindowManager {
   constructor() {
     this.mainWindow = null
   }
@@ -81,7 +81,7 @@ class WindowManager {
         contextIsolation: true,
         enableRemoteModule: false,
         preload: isDev
-          ? path.join(__dirname, '..', 'preload.js')
+          ? path.join(__dirname, '..', '..', 'preload.js')
           : path.join(app.getAppPath(), 'dist-electron', 'preload.js'),
         webSecurity: true,
         devTools: isDev, // Only enable dev tools in development
@@ -336,8 +336,8 @@ class WindowManager {
   }
 }
 
-// Make WindowManager an EventEmitter for window-closed events
+// Make PillWindowManager an EventEmitter for window-closed events
 const { EventEmitter } = require('events')
-Object.setPrototypeOf(WindowManager.prototype, EventEmitter.prototype)
+Object.setPrototypeOf(PillWindowManager.prototype, EventEmitter.prototype)
 
-module.exports = WindowManager
+module.exports = PillWindowManager

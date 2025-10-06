@@ -9,7 +9,9 @@ class DictationHistoryService {
     this.dataDir = app.getPath('userData')
     this.filePath = path.join(this.dataDir, 'dictation-history.json')
     this.backupPath = path.join(this.dataDir, 'dictation-history.backup.json')
+    this.settingsPath = path.join(this.dataDir, 'settings.json')
     this.history = []
+    this.settings = {}
     this.isInitialized = false
   }
 
@@ -25,8 +27,9 @@ class DictationHistoryService {
       // Ensure data directory exists
       await fs.mkdir(this.dataDir, { recursive: true })
 
-      // Load existing history
+      // Load existing history and settings
       await this.loadHistory()
+      await this.loadSettings()
 
       this.isInitialized = true
       console.log(`DictationHistoryService initialized with ${this.history.length} entries`)
@@ -318,6 +321,84 @@ class DictationHistoryService {
     }
 
     return false
+  }
+
+  /**
+   * Load settings from file
+   */
+  async loadSettings() {
+    try {
+      const data = await fs.readFile(this.settingsPath, 'utf8')
+      this.settings = JSON.parse(data)
+      console.log('Loaded settings:', Object.keys(this.settings).length, 'keys')
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        console.log('Settings file does not exist, starting with empty settings')
+        this.settings = {}
+      } else {
+        console.error('Error loading settings file:', error)
+        this.settings = {}
+      }
+    }
+  }
+
+  /**
+   * Save settings to file
+   */
+  async saveSettings() {
+    try {
+      const data = JSON.stringify(this.settings, null, 2)
+      await fs.writeFile(this.settingsPath, data, 'utf8')
+      console.log('Saved settings:', Object.keys(this.settings).length, 'keys')
+    } catch (error) {
+      console.error('Failed to save settings:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get a setting value
+   */
+  async getSetting(key, defaultValue = null) {
+    if (!this.isInitialized) {
+      await this.initialize()
+    }
+    return this.settings[key] !== undefined ? this.settings[key] : defaultValue
+  }
+
+  /**
+   * Set a setting value
+   */
+  async setSetting(key, value) {
+    if (!this.isInitialized) {
+      await this.initialize()
+    }
+    this.settings[key] = value
+    await this.saveSettings()
+    console.log(`Set setting: ${key} =`, value)
+  }
+
+  /**
+   * Check if onboarding has been completed
+   */
+  async isOnboardingCompleted() {
+    return await this.getSetting('onboarding_completed', false)
+  }
+
+  /**
+   * Mark onboarding as completed
+   */
+  async completeOnboarding() {
+    await this.setSetting('onboarding_completed', true)
+    await this.setSetting('onboarding_completed_at', new Date().toISOString())
+  }
+
+  /**
+   * Reset onboarding status (for dev/testing)
+   */
+  async resetOnboarding() {
+    await this.setSetting('onboarding_completed', false)
+    console.log('Onboarding status reset')
   }
 }
 

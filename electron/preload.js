@@ -67,4 +67,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Screen capture operations
   captureScreen: (options) => ipcRenderer.invoke('capture-screen', options),
+
+  // Onboarding operations
+  checkOnboardingStatus: () => ipcRenderer.invoke('check-onboarding-status'),
+  completeOnboarding: () => ipcRenderer.invoke('complete-onboarding'),
+  resetOnboarding: () => ipcRenderer.invoke('reset-onboarding'),
+
+  // Permission operations
+  getPermissionStatus: () => ipcRenderer.invoke('get-permission-status'),
+  requestMicrophonePermission: () => ipcRenderer.invoke('request-microphone-permission'),
+  requestScreenPermission: () => ipcRenderer.invoke('request-screen-permission'),
 })

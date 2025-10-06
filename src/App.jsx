@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from 'react'
 import DictationView from './components/dictation/DictationView'
 import Dashboard from './components/dashboard/Dashboard'
+import OnboardingFlow from './components/onboarding/OnboardingFlow'
 import useDictationStore from './stores/dictationStore'
 
 function App() {
   const { setWindowVisible } = useDictationStore()
   const [isDashboard, setIsDashboard] = useState(false)
+  const [isOnboarding, setIsOnboarding] = useState(false)
 
-  // Check URL hash for dashboard mode
+  // Check URL hash for dashboard/onboarding mode
   useEffect(() => {
     const checkHash = () => {
       setIsDashboard(window.location.hash === '#dashboard')
+      setIsOnboarding(window.location.hash === '#onboarding')
     }
 
     checkHash()
@@ -59,7 +62,20 @@ function App() {
     initializeApp()
   }, [setWindowVisible])
 
-  // Show dashboard or dictation based on hash
+  // Show onboarding, dashboard, or dictation based on hash
+  if (isOnboarding) {
+    return (
+      <OnboardingFlow
+        onComplete={() => {
+          // Close the onboarding window
+          if (window.electronAPI?.closeWindow) {
+            window.electronAPI.closeWindow()
+          }
+        }}
+      />
+    )
+  }
+
   if (isDashboard) {
     return (
       <div className="w-full h-screen">

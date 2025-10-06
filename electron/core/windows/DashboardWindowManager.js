@@ -1,6 +1,6 @@
 const { BrowserWindow } = require('electron')
 const path = require('path')
-const { APP_CONFIG } = require('../utils/Constants.js')
+const { APP_CONFIG } = require('../../utils/Constants.js')
 
 /**
  * DashboardWindowManager - Handles the separate dashboard window
@@ -37,7 +37,7 @@ class DashboardWindowManager {
         contextIsolation: true,
         enableRemoteModule: false,
         preload: isDev
-          ? path.join(__dirname, '..', 'preload.js')
+          ? path.join(__dirname, '..', '..', 'preload.js')
           : path.join(app.getAppPath(), 'dist-electron', 'preload.js'),
         webSecurity: true,
         devTools: isDev, // Only enable dev tools in development

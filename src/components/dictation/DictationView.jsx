@@ -175,8 +175,8 @@ const DictationView = () => {
       <div className="relative z-10 flex items-center justify-center w-full h-full px-1">
         {showModeIndicator ? (
           // Mode indicator - show mode name in small pill
-          <div className={`text-[8px] font-medium ${isAgentMode ? 'text-lime-400' : 'text-white'}`}>
-            {isAgentMode ? 'Agent' : 'Dict'}
+          <div className={`text-[8px] font-semibold ${isAgentMode ? 'text-lime-400' : 'text-white'}`}>
+            {isAgentMode ? 'Agent' : 'Normal'}
           </div>
         ) : isRecording ? (
           // Recording - show real-time audio visualizer
