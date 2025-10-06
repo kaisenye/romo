@@ -27,7 +27,7 @@ class AutoUpdater {
       this.showUpdateDialog(info)
     })
 
-    autoUpdater.on('update-not-available', (info) => {
+    autoUpdater.on('update-not-available', () => {
       log.info('Update not available')
       this.sendToRenderer('update-not-available')
     })

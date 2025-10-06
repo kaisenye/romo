@@ -18,10 +18,10 @@ class HttpUtils {
    */
   static async postJson(hostname, port, path, payload, options = {}) {
     const { timeout = HTTP_CONFIG.DEFAULT_TIMEOUT } = options
-    
+
     return new Promise((resolve, reject) => {
       const postData = JSON.stringify(payload)
-      
+
       const requestOptions = {
         hostname,
         port,
@@ -30,8 +30,8 @@ class HttpUtils {
         headers: {
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(postData),
-          ...options.headers
-        }
+          ...options.headers,
+        },
       }
 
       const req = http.request(requestOptions, (res) => {
@@ -47,7 +47,7 @@ class HttpUtils {
             resolve({
               status: res.statusCode,
               data,
-              headers: res.headers
+              headers: res.headers,
             })
           } catch (parseError) {
             reject(new Error(`Failed to parse JSON response: ${parseError.message}`))
@@ -84,9 +84,9 @@ class HttpUtils {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`Llama HTTP request attempt ${attempt}/${maxRetries}`)
-        
+
         const response = await HttpUtils.postJson('127.0.0.1', port, path, payload, {
-          timeout: HTTP_CONFIG.AI_REQUEST_TIMEOUT
+          timeout: HTTP_CONFIG.AI_REQUEST_TIMEOUT,
         })
 
         console.log(`HTTP Response: ${response.status}`)
@@ -109,7 +109,7 @@ class HttpUtils {
       } catch (error) {
         lastError = error
         console.error(`Llama request failed (attempt ${attempt}):`, error.message)
-        
+
         if (attempt < maxRetries) {
           const retryDelay = HTTP_CONFIG.RETRY_DELAY * attempt
           console.log(`Retrying in ${retryDelay}ms...`)
@@ -158,13 +158,13 @@ class HttpUtils {
    */
   static cleanContent(content) {
     if (!content) return ''
-    
+
     // Remove surrounding quotes if present
     const quotedMatch = content.match(/^"(.*)"$/s)
     if (quotedMatch) {
       return quotedMatch[1].trim()
     }
-    
+
     return content.trim()
   }
 
@@ -174,7 +174,7 @@ class HttpUtils {
    * @returns {Promise<void>}
    */
   static sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms))
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
   /**
@@ -191,7 +191,7 @@ class HttpUtils {
       temperature: options.temperature || 0.1,
       top_p: options.topP || 0.5,
       stream: false,
-      ...options.extra
+      ...options.extra,
     }
   }
 }

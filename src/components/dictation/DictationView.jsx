@@ -7,7 +7,6 @@ import '../../styles/animations.css'
 
 const DictationView = () => {
   const { error, isAgentMode, toggleAgentMode } = useDictationStore()
-  const [isExpanded, setIsExpanded] = useState(false)
   const [showProcessingWave, setShowProcessingWave] = useState(false)
   const [showModeIndicator, setShowModeIndicator] = useState(false)
 
@@ -40,8 +39,6 @@ const DictationView = () => {
       if (window.electronAPI && window.electronAPI.expandWindowForRecording) {
         await window.electronAPI.expandWindowForRecording()
       }
-      // Keep pill size - don't expand
-      setIsExpanded(false)
 
       await startRecording()
     } catch (error) {
@@ -74,21 +71,6 @@ const DictationView = () => {
     }
   }, [stopRecording, saveRecording])
 
-  // Check AI services status on mount
-  useEffect(() => {
-    const checkServices = async () => {
-      if (window.electronAPI) {
-        try {
-          const whisperStatus = await window.electronAPI.aiGetStatus()
-        } catch (error) {
-          console.error('Error checking service status:', error)
-        }
-      }
-    }
-
-    checkServices()
-  }, [])
-
   // Agent mode toggle handler
   const handleToggleAgentMode = useCallback(async () => {
     if (isHandlingToggleRef.current) {
@@ -104,7 +86,6 @@ const DictationView = () => {
     if (window.electronAPI && window.electronAPI.expandWindowForRecording) {
       await window.electronAPI.expandWindowForRecording()
     }
-    setIsExpanded(false) // Keep pill size
 
     // Show mode indicator UI
     setShowModeIndicator(true)

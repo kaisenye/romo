@@ -1,6 +1,6 @@
 const { BrowserWindow } = require('electron')
 const path = require('path')
-const { WINDOW_CONFIG, APP_CONFIG, CSP } = require('../utils/Constants.js')
+const { WINDOW_CONFIG, APP_CONFIG } = require('../utils/Constants.js')
 const AnimationUtils = require('../utils/AnimationUtils.js')
 
 /**

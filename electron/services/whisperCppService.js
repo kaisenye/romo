@@ -278,16 +278,19 @@ class WhisperCppService extends BaseAIService {
             }
 
             resolve(result)
-          } catch (parseError) {
+          } catch (error) {
             console.error('Failed to parse Whisper.cpp output:', output)
+            console.error('Error:', error.message)
 
             // Fallback: try to parse as plain text even if JSON was requested
             try {
               const result = this.parsePlainTextOutput(output)
               console.log('Fallback parsed result:', result)
               resolve(result)
-            } catch (fallbackError) {
-              reject(new Error(`Failed to parse output: ${parseError.message}`))
+            } catch (error) {
+              console.error('Failed to parse fallback output:', output)
+              console.error('Error:', error.message)
+              reject(new Error(`Failed to parse output: ${error.message}`))
             }
           }
         } else {
@@ -298,6 +301,7 @@ class WhisperCppService extends BaseAIService {
 
       whisperProcess.on('error', (error) => {
         console.error('Whisper.cpp process error:', error)
+        console.error('Error:', error.message)
         reject(new Error(`Failed to spawn Whisper.cpp: ${error.message}`))
       })
     })
@@ -367,7 +371,7 @@ class WhisperCppService extends BaseAIService {
 
     // Handle JSON output format (with transcription array)
     if (whisperResult.transcription && Array.isArray(whisperResult.transcription)) {
-      segments = whisperResult.transcription.map((item, index) => ({
+      segments = whisperResult.transcription.map((item) => ({
         start: item.timestamps?.start || 0,
         end: item.timestamps?.end || 0,
         text: item.text || '',

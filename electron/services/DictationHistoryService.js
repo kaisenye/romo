@@ -27,7 +27,7 @@ class DictationHistoryService {
 
       // Load existing history
       await this.loadHistory()
-      
+
       this.isInitialized = true
       console.log(`DictationHistoryService initialized with ${this.history.length} entries`)
     } catch (error) {
@@ -45,13 +45,11 @@ class DictationHistoryService {
     try {
       const data = await fs.readFile(this.filePath, 'utf8')
       const parsed = JSON.parse(data)
-      
+
       // Validate data structure
       if (Array.isArray(parsed)) {
-        this.history = parsed
-          .filter(entry => this.isValidEntry(entry))
-          .slice(0, this.maxEntries) // Ensure we don't exceed max entries
-        
+        this.history = parsed.filter((entry) => this.isValidEntry(entry)).slice(0, this.maxEntries) // Ensure we don't exceed max entries
+
         console.log(`Loaded ${this.history.length} valid entries from history file`)
       } else {
         console.warn('Invalid history file format, starting with empty history')
@@ -77,12 +75,10 @@ class DictationHistoryService {
       console.log('Attempting to load from backup file...')
       const data = await fs.readFile(this.backupPath, 'utf8')
       const parsed = JSON.parse(data)
-      
+
       if (Array.isArray(parsed)) {
-        this.history = parsed
-          .filter(entry => this.isValidEntry(entry))
-          .slice(0, this.maxEntries)
-        
+        this.history = parsed.filter((entry) => this.isValidEntry(entry)).slice(0, this.maxEntries)
+
         console.log(`Restored ${this.history.length} entries from backup`)
         // Restore main file from backup
         await this.saveHistory()
@@ -116,7 +112,7 @@ class DictationHistoryService {
   async saveHistory() {
     try {
       const data = JSON.stringify(this.history, null, 2)
-      
+
       // Create backup before saving
       try {
         await fs.copyFile(this.filePath, this.backupPath)
@@ -145,7 +141,7 @@ class DictationHistoryService {
     try {
       // Calculate word count
       const wordCount = this.calculateWordCount(dictationData.text)
-      
+
       // Create entry
       const entry = {
         id: uuidv4(),
@@ -154,7 +150,7 @@ class DictationHistoryService {
         wordCount: wordCount,
         duration: dictationData.duration || 0,
         processingTime: dictationData.processingTime || 0,
-        confidence: dictationData.confidence || null
+        confidence: dictationData.confidence || null,
       }
 
       // Validate entry
@@ -186,12 +182,11 @@ class DictationHistoryService {
    */
   calculateWordCount(text) {
     if (!text || typeof text !== 'string') return 0
-    
+
     return text
       .trim()
       .split(/\s+/)
-      .filter(word => word.length > 0)
-      .length
+      .filter((word) => word.length > 0).length
   }
 
   /**
@@ -201,7 +196,7 @@ class DictationHistoryService {
     if (!this.isInitialized) {
       await this.initialize()
     }
-    
+
     return [...this.history] // Return a copy to prevent external modifications
   }
 
@@ -220,7 +215,7 @@ class DictationHistoryService {
         avgWordsPerSession: 0,
         avgDuration: 0,
         totalTime: 0,
-        streakDays: 0
+        streakDays: 0,
       }
     }
 
@@ -238,7 +233,7 @@ class DictationHistoryService {
       avgWordsPerSession,
       avgDuration,
       totalTime,
-      streakDays
+      streakDays,
     }
   }
 
@@ -253,7 +248,7 @@ class DictationHistoryService {
 
     // Get unique dates from history
     const dates = this.history
-      .map(entry => {
+      .map((entry) => {
         const date = new Date(entry.timestamp)
         date.setHours(0, 0, 0, 0)
         return date.getTime()
@@ -302,7 +297,7 @@ class DictationHistoryService {
       await this.initialize()
     }
 
-    return this.history.find(entry => entry.id === id) || null
+    return this.history.find((entry) => entry.id === id) || null
   }
 
   /**
@@ -314,14 +309,14 @@ class DictationHistoryService {
     }
 
     const initialLength = this.history.length
-    this.history = this.history.filter(entry => entry.id !== id)
-    
+    this.history = this.history.filter((entry) => entry.id !== id)
+
     if (this.history.length < initialLength) {
       await this.saveHistory()
       console.log('Deleted entry:', id)
       return true
     }
-    
+
     return false
   }
 }

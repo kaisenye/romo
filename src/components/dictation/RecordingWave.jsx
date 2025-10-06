@@ -43,8 +43,8 @@ const RecordingWave = ({ audioLevel = 0, isAgentMode = false }) => {
           key={index}
           className={`w-0.5 rounded-full ${barColor} transition-all duration-100 ease-out`}
           style={{
-            height: `${getBarHeight(index) * 10}px`, // Max 15px height (1.5 * 10)
-            opacity: Math.max(0.5, audioLevel * 1.5),
+            height: `${getBarHeight(index) * 8}px`, // Max 15px height (1.5 * 10)
+            opacity: Math.max(0.7, audioLevel * 1.5),
           }}
         />
       ))}

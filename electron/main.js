@@ -242,8 +242,8 @@ app.on('before-quit', async (event) => {
 })
 
 // Security: Prevent new window creation
-app.on('web-contents-created', (event, contents) => {
-  contents.on('new-window', (navigationEvent, url) => {
+app.on('web-contents-created', (_, contents) => {
+  contents.on('new-window', (navigationEvent) => {
     navigationEvent.preventDefault()
   })
 })
