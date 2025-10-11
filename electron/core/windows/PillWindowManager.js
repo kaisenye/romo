@@ -95,7 +95,7 @@ class PillWindowManager {
       movable: false, // Prevent moving to keep it centered
       hasShadow: false, // Remove shadow for minimal appearance
       alwaysOnTop: true, // Keep window on top of all other applications
-      visibleOnAllWorkspaces: false, // Don't force window to all desktops - stay on current desktop
+      visibleOnAllWorkspaces: true, // Show window on all desktops/spaces
       focusable: false, // Prevent window from stealing focus
       minimizable: false, // Remove minimize button
       maximizable: false, // Remove maximize button

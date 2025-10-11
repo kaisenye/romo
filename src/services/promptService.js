@@ -58,7 +58,8 @@ class PromptService {
       - DO NOT show multiple options, just one.
 
       NOTE:
-      - Keep it concise and simple first, unless user explicitly ask for more complex output
+      - Keep it super concise and simple first, unless user explicitly ask for more complex output
+
 
       ${
         hasScreenContext

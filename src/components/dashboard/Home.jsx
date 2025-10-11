@@ -115,7 +115,7 @@ const Home = () => {
   const streakDays = historyStats.streakDays
 
   return (
-    <div className="flex-1 px-6 pt-6 pb-16 overflow-y-auto">
+    <div className="flex-1 px-6 pt-6 pb-16 overflow-y-auto scrollbar-thin">
       {/* Header Stats */}
       <div className="mb-8">
         <h1 className="text-lg font-bold text-neutral-100 mb-2">Welcome back</h1>
