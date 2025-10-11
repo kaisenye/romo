@@ -70,7 +70,6 @@ class BaseAIService extends EventEmitter {
    * Should set this.binary
    */
   async setupBinary() {
-    const { app } = require('electron')
     this.binary = await ProcessUtils.findBinary(this.serviceName.toUpperCase(), __dirname + '/../..')
   }
 

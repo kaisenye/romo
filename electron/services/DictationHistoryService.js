@@ -9,7 +9,9 @@ class DictationHistoryService {
     this.dataDir = app.getPath('userData')
     this.filePath = path.join(this.dataDir, 'dictation-history.json')
     this.backupPath = path.join(this.dataDir, 'dictation-history.backup.json')
+    this.settingsPath = path.join(this.dataDir, 'settings.json')
     this.history = []
+    this.settings = {}
     this.isInitialized = false
   }
 
@@ -25,9 +27,10 @@ class DictationHistoryService {
       // Ensure data directory exists
       await fs.mkdir(this.dataDir, { recursive: true })
 
-      // Load existing history
+      // Load existing history and settings
       await this.loadHistory()
-      
+      await this.loadSettings()
+
       this.isInitialized = true
       console.log(`DictationHistoryService initialized with ${this.history.length} entries`)
     } catch (error) {
@@ -45,13 +48,11 @@ class DictationHistoryService {
     try {
       const data = await fs.readFile(this.filePath, 'utf8')
       const parsed = JSON.parse(data)
-      
+
       // Validate data structure
       if (Array.isArray(parsed)) {
-        this.history = parsed
-          .filter(entry => this.isValidEntry(entry))
-          .slice(0, this.maxEntries) // Ensure we don't exceed max entries
-        
+        this.history = parsed.filter((entry) => this.isValidEntry(entry)).slice(0, this.maxEntries) // Ensure we don't exceed max entries
+
         console.log(`Loaded ${this.history.length} valid entries from history file`)
       } else {
         console.warn('Invalid history file format, starting with empty history')
@@ -77,12 +78,10 @@ class DictationHistoryService {
       console.log('Attempting to load from backup file...')
       const data = await fs.readFile(this.backupPath, 'utf8')
       const parsed = JSON.parse(data)
-      
+
       if (Array.isArray(parsed)) {
-        this.history = parsed
-          .filter(entry => this.isValidEntry(entry))
-          .slice(0, this.maxEntries)
-        
+        this.history = parsed.filter((entry) => this.isValidEntry(entry)).slice(0, this.maxEntries)
+
         console.log(`Restored ${this.history.length} entries from backup`)
         // Restore main file from backup
         await this.saveHistory()
@@ -116,7 +115,7 @@ class DictationHistoryService {
   async saveHistory() {
     try {
       const data = JSON.stringify(this.history, null, 2)
-      
+
       // Create backup before saving
       try {
         await fs.copyFile(this.filePath, this.backupPath)
@@ -145,7 +144,7 @@ class DictationHistoryService {
     try {
       // Calculate word count
       const wordCount = this.calculateWordCount(dictationData.text)
-      
+
       // Create entry
       const entry = {
         id: uuidv4(),
@@ -154,7 +153,7 @@ class DictationHistoryService {
         wordCount: wordCount,
         duration: dictationData.duration || 0,
         processingTime: dictationData.processingTime || 0,
-        confidence: dictationData.confidence || null
+        confidence: dictationData.confidence || null,
       }
 
       // Validate entry
@@ -186,12 +185,11 @@ class DictationHistoryService {
    */
   calculateWordCount(text) {
     if (!text || typeof text !== 'string') return 0
-    
+
     return text
       .trim()
       .split(/\s+/)
-      .filter(word => word.length > 0)
-      .length
+      .filter((word) => word.length > 0).length
   }
 
   /**
@@ -201,7 +199,7 @@ class DictationHistoryService {
     if (!this.isInitialized) {
       await this.initialize()
     }
-    
+
     return [...this.history] // Return a copy to prevent external modifications
   }
 
@@ -220,7 +218,7 @@ class DictationHistoryService {
         avgWordsPerSession: 0,
         avgDuration: 0,
         totalTime: 0,
-        streakDays: 0
+        streakDays: 0,
       }
     }
 
@@ -238,7 +236,7 @@ class DictationHistoryService {
       avgWordsPerSession,
       avgDuration,
       totalTime,
-      streakDays
+      streakDays,
     }
   }
 
@@ -253,7 +251,7 @@ class DictationHistoryService {
 
     // Get unique dates from history
     const dates = this.history
-      .map(entry => {
+      .map((entry) => {
         const date = new Date(entry.timestamp)
         date.setHours(0, 0, 0, 0)
         return date.getTime()
@@ -302,7 +300,7 @@ class DictationHistoryService {
       await this.initialize()
     }
 
-    return this.history.find(entry => entry.id === id) || null
+    return this.history.find((entry) => entry.id === id) || null
   }
 
   /**
@@ -314,15 +312,93 @@ class DictationHistoryService {
     }
 
     const initialLength = this.history.length
-    this.history = this.history.filter(entry => entry.id !== id)
-    
+    this.history = this.history.filter((entry) => entry.id !== id)
+
     if (this.history.length < initialLength) {
       await this.saveHistory()
       console.log('Deleted entry:', id)
       return true
     }
-    
+
     return false
+  }
+
+  /**
+   * Load settings from file
+   */
+  async loadSettings() {
+    try {
+      const data = await fs.readFile(this.settingsPath, 'utf8')
+      this.settings = JSON.parse(data)
+      console.log('Loaded settings:', Object.keys(this.settings).length, 'keys')
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        console.log('Settings file does not exist, starting with empty settings')
+        this.settings = {}
+      } else {
+        console.error('Error loading settings file:', error)
+        this.settings = {}
+      }
+    }
+  }
+
+  /**
+   * Save settings to file
+   */
+  async saveSettings() {
+    try {
+      const data = JSON.stringify(this.settings, null, 2)
+      await fs.writeFile(this.settingsPath, data, 'utf8')
+      console.log('Saved settings:', Object.keys(this.settings).length, 'keys')
+    } catch (error) {
+      console.error('Failed to save settings:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get a setting value
+   */
+  async getSetting(key, defaultValue = null) {
+    if (!this.isInitialized) {
+      await this.initialize()
+    }
+    return this.settings[key] !== undefined ? this.settings[key] : defaultValue
+  }
+
+  /**
+   * Set a setting value
+   */
+  async setSetting(key, value) {
+    if (!this.isInitialized) {
+      await this.initialize()
+    }
+    this.settings[key] = value
+    await this.saveSettings()
+    console.log(`Set setting: ${key} =`, value)
+  }
+
+  /**
+   * Check if onboarding has been completed
+   */
+  async isOnboardingCompleted() {
+    return await this.getSetting('onboarding_completed', false)
+  }
+
+  /**
+   * Mark onboarding as completed
+   */
+  async completeOnboarding() {
+    await this.setSetting('onboarding_completed', true)
+    await this.setSetting('onboarding_completed_at', new Date().toISOString())
+  }
+
+  /**
+   * Reset onboarding status (for dev/testing)
+   */
+  async resetOnboarding() {
+    await this.setSetting('onboarding_completed', false)
+    console.log('Onboarding status reset')
   }
 }
 

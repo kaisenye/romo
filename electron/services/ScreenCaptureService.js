@@ -62,12 +62,12 @@ class ScreenCaptureService {
   async _captureMacOSWithSharp(maxHeight, jpegQuality) {
     try {
       const tempPath = path.join(os.tmpdir(), `dictation-screenshot-${Date.now()}.jpg`)
-      
+
       // Use native screencapture command for best quality
       await execFileAsync('screencapture', ['-x', '-t', 'jpg', tempPath])
-      
+
       const imageBuffer = await fs.readFile(tempPath)
-      
+
       // Clean up temp file
       try {
         await fs.unlink(tempPath)
@@ -91,12 +91,12 @@ class ScreenCaptureService {
         timestamp: Date.now(),
       }
 
-      return { 
-        success: true, 
-        base64, 
-        width: metadata.width, 
+      return {
+        success: true,
+        base64,
+        width: metadata.width,
         height: metadata.height,
-        method: 'native-screencapture-sharp'
+        method: 'native-screencapture-sharp',
       }
     } catch (error) {
       console.error('[ScreenCaptureService] macOS capture failed:', error)
@@ -132,12 +132,12 @@ class ScreenCaptureService {
         timestamp: Date.now(),
       }
 
-      return { 
-        success: true, 
-        base64, 
-        width: size.width, 
+      return {
+        success: true,
+        base64,
+        width: size.width,
         height: size.height,
-        method: 'electron-desktopCapturer'
+        method: 'electron-desktopCapturer',
       }
     } catch (error) {
       console.error('[ScreenCaptureService] Desktop capturer failed:', error)

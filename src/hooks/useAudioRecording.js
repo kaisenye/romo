@@ -8,7 +8,6 @@ const ENABLE_SCREEN_CONTEXT = import.meta.env.VITE_ENABLE_SCREEN_CONTEXT === 'tr
 const useAudioRecording = (options = {}) => {
   const {
     enableScreenContext = ENABLE_SCREEN_CONTEXT,
-    captureScreenOnStart = true,
     mode = 'transcript_refinement', // 'transcript_refinement' | 'agent_mode'
   } = options
 
@@ -25,7 +24,6 @@ const useAudioRecording = (options = {}) => {
   const chunksRef = useRef([])
   const recordingStartTimeRef = useRef(null)
   const allAudioDataRef = useRef([])
-  const currentScreenshotRef = useRef(null)
 
   // Audio level monitoring with improved sensitivity
   const updateAudioLevel = useCallback(() => {
@@ -47,22 +45,6 @@ const useAudioRecording = (options = {}) => {
 
       animationFrameRef.current = requestAnimationFrame(updateAudioLevel)
     }
-  }, [])
-
-  // Check if audio level indicates speech
-  const hasSpeech = useCallback((audioData) => {
-    if (!audioData || audioData.length === 0) return false
-
-    // Calculate RMS of the audio data
-    let sum = 0
-    for (let i = 0; i < audioData.length; i++) {
-      sum += audioData[i] * audioData[i]
-    }
-    const rms = Math.sqrt(sum / audioData.length)
-
-    // Threshold for speech detection (adjust as needed)
-    const speechThreshold = 0.01
-    return rms > speechThreshold
   }, [])
 
   // Start recording with improved logic
@@ -187,7 +169,6 @@ const useAudioRecording = (options = {}) => {
     return buffer
   }
 
-
   // Stop recording
   const stopRecording = useCallback(async () => {
     try {
@@ -263,7 +244,7 @@ const useAudioRecording = (options = {}) => {
   }, []) // Remove isRecording from dependencies to prevent recreation
 
   // Save complete recording and process all audio at once
-  const saveRecording = useCallback(async (meetingId) => {
+  const saveRecording = useCallback(async () => {
     // Agent mode enabled with OpenAI integration
     const isAgentMode = window.useDictationStore ? window.useDictationStore.getState().isAgentMode : false
 
@@ -404,6 +385,7 @@ const useAudioRecording = (options = {}) => {
       }
     } catch (error) {
       // Silent fail for paste operations
+      console.error('Error pasting to focused app:', error.message)
     }
   }, [])
 

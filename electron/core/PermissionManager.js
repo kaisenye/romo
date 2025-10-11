@@ -59,6 +59,17 @@ class PermissionManager {
     }
     return true // Assume granted on other platforms
   }
+
+  /**
+   * Check screen recording permission status
+   */
+  static getScreenRecordingPermissionStatus() {
+    if (process.platform === 'darwin') {
+      const { systemPreferences } = require('electron')
+      return systemPreferences.getMediaAccessStatus('screen')
+    }
+    return 'granted' // Assume granted on other platforms
+  }
 }
 
 module.exports = PermissionManager

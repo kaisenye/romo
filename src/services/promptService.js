@@ -54,11 +54,12 @@ class PromptService {
         7. For documents: use proper headings and organization
 
       OUTPUT:
-      – Only output the text that user can directly use and paste in their input field, DO NOT include other text like greeting, confirmation, or options.
-      – DO NOT show multiple options, just one.
+      - Only output the text that user can directly use and paste in their input field, DO NOT include other text like greeting, confirmation, or options.
+      - DO NOT show multiple options, just one.
 
       NOTE:
-      – Keep it concise and simple first, unless user explicitly ask for more complex output
+      - Keep it super concise and simple first, unless user explicitly ask for more complex output
+
 
       ${
         hasScreenContext

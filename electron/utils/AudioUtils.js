@@ -15,7 +15,7 @@ class AudioUtils {
     PCM_FORMAT: 1,
     MONO_CHANNELS: 1,
     BITS_PER_SAMPLE: 16,
-    BYTES_PER_SAMPLE: 2
+    BYTES_PER_SAMPLE: 2,
   }
 
   /**
@@ -71,7 +71,7 @@ class AudioUtils {
     const blockAlign = channels * bytesPerSample
     const byteRate = sampleRate * blockAlign
     const fileSize = AudioUtils.WAV_CONSTANTS.HEADER_SIZE - 8 + dataSize // Subtract 8 for RIFF header
-    
+
     return {
       sampleRate,
       channels,
@@ -80,7 +80,7 @@ class AudioUtils {
       blockAlign,
       byteRate,
       dataSize,
-      fileSize
+      fileSize,
     }
   }
 
@@ -144,7 +144,8 @@ class AudioUtils {
     }
 
     // Ensure even length for 16-bit samples
-    const dataSize = Math.floor(buffer.length / AudioUtils.WAV_CONSTANTS.BYTES_PER_SAMPLE) * AudioUtils.WAV_CONSTANTS.BYTES_PER_SAMPLE
+    const dataSize =
+      Math.floor(buffer.length / AudioUtils.WAV_CONSTANTS.BYTES_PER_SAMPLE) * AudioUtils.WAV_CONSTANTS.BYTES_PER_SAMPLE
     const audioBuffer = buffer.subarray(0, dataSize)
 
     // Calculate WAV parameters
@@ -197,7 +198,7 @@ class AudioUtils {
       bitsPerSample,
       dataSize,
       duration,
-      totalSize: wavBuffer.length
+      totalSize: wavBuffer.length,
     }
   }
 }

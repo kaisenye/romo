@@ -5,21 +5,24 @@ const whisperCppService = require('./services/whisperCppService')
 const llamaCppService = require('./services/llamaCppService')
 
 // Import new modular components
-const WindowManager = require('./core/WindowManager')
-const DashboardWindowManager = require('./core/DashboardWindowManager')
+const PillWindowManager = require('./core/windows/PillWindowManager')
+const DashboardWindowManager = require('./core/windows/DashboardWindowManager')
+const OnboardingWindowManager = require('./core/windows/OnboardingWindowManager')
 const IPCRouter = require('./core/IPCRouter')
 const ShortcutManager = require('./core/ShortcutManager')
 const TrayManager = require('./core/TrayManager')
 const PermissionManager = require('./core/PermissionManager')
 const AutoUpdater = require('./core/AutoUpdater')
+const dictationHistoryService = require('./services/DictationHistoryService')
 
 // Initialize managers
-const windowManager = new WindowManager()
+const pillWindowManager = new PillWindowManager()
 const dashboardWindowManager = new DashboardWindowManager()
-const ipcRouter = new IPCRouter(windowManager, whisperCppService, llamaCppService)
-const shortcutManager = new ShortcutManager(windowManager)
-const trayManager = new TrayManager(windowManager, whisperCppService, llamaCppService, dashboardWindowManager)
-const autoUpdater = new AutoUpdater(windowManager)
+const onboardingWindowManager = new OnboardingWindowManager()
+const ipcRouter = new IPCRouter(pillWindowManager, whisperCppService, llamaCppService)
+const shortcutManager = new ShortcutManager(pillWindowManager)
+const trayManager = new TrayManager(pillWindowManager, whisperCppService, llamaCppService, dashboardWindowManager)
+const autoUpdater = new AutoUpdater(pillWindowManager)
 
 /**
  * Create application menu for macOS
@@ -73,7 +76,7 @@ function createMenu() {
           label: 'New Meeting',
           accelerator: 'Command+N',
           click: () => {
-            const mainWindow = windowManager.getWindow()
+            const mainWindow = pillWindowManager.getWindow()
             if (mainWindow) {
               mainWindow.webContents.send('menu-new-meeting')
             }
@@ -84,7 +87,7 @@ function createMenu() {
           label: 'Export Meeting',
           accelerator: 'Command+E',
           click: () => {
-            const mainWindow = windowManager.getWindow()
+            const mainWindow = pillWindowManager.getWindow()
             if (mainWindow) {
               mainWindow.webContents.send('menu-export-meeting')
             }
@@ -155,14 +158,53 @@ app.whenReady().then(async () => {
       // Don't fail the app startup for Llama.cpp - it's optional for post-processing
     }
 
+    // Check if onboarding should be shown
+    const skipOnboarding = process.env.DEV_SKIP_ONBOARDING === 'true'
+    const forceOnboarding = process.env.DEV_FORCE_ONBOARDING === 'true'
+    let shouldShowOnboarding = false
+
+    if (forceOnboarding) {
+      // Force onboarding mode for dev (keeps window open for modifications)
+      console.log('DEV_FORCE_ONBOARDING=true: Showing onboarding in persistent dev mode')
+      shouldShowOnboarding = true
+    } else if (!skipOnboarding) {
+      try {
+        await dictationHistoryService.initialize()
+        shouldShowOnboarding = !(await dictationHistoryService.isOnboardingCompleted())
+      } catch (error) {
+        console.warn('Failed to check onboarding status:', error)
+        shouldShowOnboarding = false
+      }
+    }
+
     // Create window and set up handlers (these are required)
-    windowManager.createWindow()
+    if (shouldShowOnboarding) {
+      console.log('Showing onboarding...')
+      onboardingWindowManager.createWindow()
+
+      // Handle onboarding completion
+      onboardingWindowManager.on('onboarding-closed', () => {
+        console.log('Onboarding window closed')
+
+        // In force mode, don't create main window (just keep onboarding for dev)
+        if (!forceOnboarding) {
+          console.log('Creating main window...')
+          pillWindowManager.createWindow()
+        } else {
+          console.log('DEV_FORCE_ONBOARDING mode: Skipping main window creation')
+        }
+      })
+    } else {
+      pillWindowManager.createWindow()
+    }
+
     createMenu()
     ipcRouter.registerHandlers()
+    ipcRouter.registerOnboardingHandlers()
     shortcutManager.registerGlobalShortcuts()
 
     // Handle window closed event
-    windowManager.on('window-closed', async () => {
+    pillWindowManager.on('window-closed', async () => {
       // Shutdown AI services
       try {
         await whisperCppService.shutdown()
@@ -182,13 +224,13 @@ app.whenReady().then(async () => {
     app.on('activate', async () => {
       // On macOS, re-create window when dock icon is clicked
       if (BrowserWindow.getAllWindows().length === 0) {
-        windowManager.createWindow()
-      } else if (windowManager.getWindow()) {
+        pillWindowManager.createWindow()
+      } else if (pillWindowManager.getWindow()) {
         // If window exists but is hidden, show it on current desktop
-        if (!windowManager.isVisible()) {
-          await windowManager.showWindowOnCurrentDesktop()
+        if (!pillWindowManager.isVisible()) {
+          await pillWindowManager.showWindowOnCurrentDesktop()
         } else {
-          windowManager.getWindow().focus()
+          pillWindowManager.getWindow().focus()
         }
       }
     })
@@ -242,8 +284,8 @@ app.on('before-quit', async (event) => {
 })
 
 // Security: Prevent new window creation
-app.on('web-contents-created', (event, contents) => {
-  contents.on('new-window', (navigationEvent, url) => {
+app.on('web-contents-created', (_, contents) => {
+  contents.on('new-window', (navigationEvent) => {
     navigationEvent.preventDefault()
   })
 })

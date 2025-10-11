@@ -1,0 +1,7 @@
+dist
+dist-electron
+node_modules
+build
+whisper.cpp
+*.log
+package-lock.json

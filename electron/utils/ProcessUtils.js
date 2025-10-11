@@ -42,6 +42,7 @@ class ProcessUtils {
           return binaryPath
         } catch (error) {
           // Continue to next path
+          console.error(`Error accessing binary path: ${error.message}`)
         }
       }
     }
@@ -71,6 +72,7 @@ class ProcessUtils {
         return binaryPath
       } catch (error) {
         // Continue to next path
+        console.error(`Error accessing binary path: ${error.message}`)
       }
     }
 
@@ -169,6 +171,7 @@ class ProcessUtils {
           return modelPath
         } catch (error) {
           // Continue to next model/directory
+          console.error(`Error accessing model path: ${error.message}`)
         }
       }
     }
@@ -235,6 +238,7 @@ class ProcessUtils {
         attempts++
         console.log(`Waiting for server on ${host}:${port}... (${attempts}/${maxAttempts})`)
         await ProcessUtils.sleep(1000)
+        console.error(`Error waiting for server: ${error.message}`)
       }
     }
 

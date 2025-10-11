@@ -13,11 +13,11 @@ class ErrorUtils {
   static createErrorResponse(operation, error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error(`Failed to ${operation}:`, errorMessage)
-    
+
     return {
       success: false,
       error: errorMessage,
-      operation
+      operation,
     }
   }
 
@@ -32,17 +32,17 @@ class ErrorUtils {
     if (Array.isArray(data) || typeof data !== 'object' || data === null) {
       return data
     }
-    
+
     // For objects, create wrapped response
     const response = {
       success: true,
-      ...data
+      ...data,
     }
-    
+
     if (operation) {
       response.operation = operation
     }
-    
+
     return response
   }
 
@@ -55,9 +55,9 @@ class ErrorUtils {
   static logAndThrow(context, error, additionalInfo = null) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     const fullMessage = `${context}: ${errorMessage}`
-    
+
     console.error(fullMessage, additionalInfo || '')
-    
+
     if (error instanceof Error) {
       // Preserve original error type but update message
       error.message = fullMessage

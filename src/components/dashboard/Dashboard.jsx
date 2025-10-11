@@ -1,12 +1,9 @@
 import React, { useState } from 'react'
-import useDictationStore from '../../stores/dictationStore'
-import Button from '../ui/Button'
 import Home from './Home'
 import SettingsPage from './Settings'
 import { LayoutDashboard, Settings } from 'lucide-react'
 
-const Dashboard = ({ onClose }) => {
-  const { userPlan } = useDictationStore()
+const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState('home')
 
   console.log('Dashboard render - currentPage:', currentPage)

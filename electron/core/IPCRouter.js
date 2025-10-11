@@ -82,6 +82,14 @@ class IPCRouter {
       return await this.windowManager.shrinkWindowToPill()
     })
 
+    ipcMain.handle('hide-window', async () => {
+      return await this.windowManager.hideWindow()
+    })
+
+    ipcMain.handle('show-mode-indicator', async () => {
+      return await this.windowManager.showModeIndicator()
+    })
+
     // Clipboard and paste operations
     ipcMain.handle('paste-to-focused-app', async (event, text) => {
       try {
@@ -277,13 +285,126 @@ class IPCRouter {
 
     // Screen capture handler
     ipcMain.handle(
-      'capture-screen', 
+      'capture-screen',
       ErrorUtils.wrapIPCHandler(async (event, options = {}) => {
         return await screenCaptureService.captureScreenshot(options)
       }, 'capture screen')
     )
 
     console.log('IPC handlers registered successfully')
+  }
+
+  /**
+   * Register onboarding-related IPC handlers
+   */
+  registerOnboardingHandlers() {
+    const PermissionManager = require('./PermissionManager')
+
+    // Check if onboarding has been completed
+    ipcMain.handle('check-onboarding-status', async () => {
+      try {
+        const isCompleted = await dictationHistoryService.isOnboardingCompleted()
+        return { success: true, completed: isCompleted }
+      } catch (error) {
+        console.error('Failed to check onboarding status:', error)
+        return { success: false, error: error.message }
+      }
+    })
+
+    // Mark onboarding as completed
+    ipcMain.handle('complete-onboarding', async () => {
+      try {
+        await dictationHistoryService.completeOnboarding()
+        return { success: true }
+      } catch (error) {
+        console.error('Failed to complete onboarding:', error)
+        return { success: false, error: error.message }
+      }
+    })
+
+    // Reset onboarding status (for dev/testing)
+    ipcMain.handle('reset-onboarding', async () => {
+      try {
+        await dictationHistoryService.resetOnboarding()
+        return { success: true }
+      } catch (error) {
+        console.error('Failed to reset onboarding:', error)
+        return { success: false, error: error.message }
+      }
+    })
+
+    // Get current permission status
+    ipcMain.handle('get-permission-status', async () => {
+      try {
+        const micStatus = PermissionManager.getMicrophonePermissionStatus()
+        const screenStatus = PermissionManager.getScreenRecordingPermissionStatus()
+
+        return {
+          success: true,
+          microphone: micStatus,
+          screen: screenStatus,
+        }
+      } catch (error) {
+        console.error('Failed to get permission status:', error)
+        return { success: false, error: error.message }
+      }
+    })
+
+    // Request microphone permission
+    ipcMain.handle('request-microphone-permission', async () => {
+      try {
+        const { systemPreferences, shell } = require('electron')
+        if (process.platform === 'darwin') {
+          const currentStatus = systemPreferences.getMediaAccessStatus('microphone')
+
+          if (currentStatus === 'not-determined') {
+            // First time - show system dialog
+            const granted = await systemPreferences.askForMediaAccess('microphone')
+            return { success: true, granted }
+          } else {
+            // Already determined - open System Preferences
+            shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone')
+            return { success: true, granted: currentStatus === 'granted' }
+          }
+        }
+        return { success: true, granted: true }
+      } catch (error) {
+        console.error('Failed to request microphone permission:', error)
+        return { success: false, error: error.message }
+      }
+    })
+
+    // Request screen recording permission
+    ipcMain.handle('request-screen-permission', async () => {
+      try {
+        const { systemPreferences, shell } = require('electron')
+        if (process.platform === 'darwin') {
+          const currentStatus = systemPreferences.getMediaAccessStatus('screen')
+
+          if (currentStatus === 'not-determined') {
+            // First time - trigger prompt by attempting screen capture
+            try {
+              await screenCaptureService.captureScreenshot({ useCache: false })
+            } catch (error) {
+              // Capture may fail, that's ok - it triggered the prompt
+              console.log('Screen capture triggered permission prompt', error)
+            }
+            const status = await systemPreferences.getMediaAccessStatus('screen')
+            return { success: true, granted: status === 'granted' }
+          } else {
+            // Already determined - open System Preferences
+            shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture')
+            return { success: true, granted: currentStatus === 'granted' }
+          }
+        }
+        return { success: true, granted: true }
+      } catch (error) {
+        console.error('Failed to request screen permission:', error)
+        return { success: false, error: error.message }
+      }
+    })
+
+    console.log('Onboarding IPC handlers registered')
   }
 
   /**
@@ -316,6 +437,12 @@ class IPCRouter {
       'delete-dictation-entry',
       'clear-dictation-history',
       'capture-screen',
+      'check-onboarding-status',
+      'complete-onboarding',
+      'reset-onboarding',
+      'get-permission-status',
+      'request-microphone-permission',
+      'request-screen-permission',
     ]
 
     handlers.forEach((handler) => {

@@ -1,13 +1,14 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react'
 import useDictationStore from '../../stores/dictationStore'
 import useAudioRecording from '../../hooks/useAudioRecording'
-import SoundWaveVisualizer from './SoundWaveVisualizer'
+import RecordingWave from './RecordingWave'
+import ProcessingWave from './ProcessingWave'
 import '../../styles/animations.css'
 
 const DictationView = () => {
   const { error, isAgentMode, toggleAgentMode } = useDictationStore()
-  const [isExpanded, setIsExpanded] = useState(false)
   const [showProcessingWave, setShowProcessingWave] = useState(false)
+  const [showModeIndicator, setShowModeIndicator] = useState(false)
 
   // Use the proper audio recording hook
   const {
@@ -34,10 +35,9 @@ const DictationView = () => {
   // Press and hold behavior handlers
   const handleStartRecording = useCallback(async () => {
     try {
-      // Expand window first
+      // Show window if hidden
       if (window.electronAPI && window.electronAPI.expandWindowForRecording) {
         await window.electronAPI.expandWindowForRecording()
-        setIsExpanded(true)
       }
 
       await startRecording()
@@ -51,18 +51,19 @@ const DictationView = () => {
     try {
       await stopRecording()
 
-      // Shrink window but show processing wave
-      if (window.electronAPI && window.electronAPI.shrinkWindowToPill) {
-        await window.electronAPI.shrinkWindowToPill()
-        setIsExpanded(false)
-        setShowProcessingWave(true) // Show processing wave in pill mode
-      }
+      // Keep pill size, show processing wave
+      setShowProcessingWave(true)
 
       // Save the recording (this will trigger final processing)
       await saveRecording('dictation-session')
 
-      // After processing is complete, return to circle
+      // After processing is complete, hide window
       setShowProcessingWave(false)
+
+      // Hide the window with slide up animation
+      if (window.electronAPI && window.electronAPI.hideWindow) {
+        await window.electronAPI.hideWindow()
+      }
     } catch (error) {
       console.error('Failed to stop recording:', error)
       useDictationStore.getState().setError(`Failed to stop recording: ${error.message}`)
@@ -70,34 +71,37 @@ const DictationView = () => {
     }
   }, [stopRecording, saveRecording])
 
-  // Check AI services status on mount
-  useEffect(() => {
-    const checkServices = async () => {
-      if (window.electronAPI) {
-        try {
-          const whisperStatus = await window.electronAPI.aiGetStatus()
-        } catch (error) {
-          console.error('Error checking service status:', error)
-        }
-      }
-    }
-
-    checkServices()
-  }, [])
-
   // Agent mode toggle handler
-  const handleToggleAgentMode = useCallback(() => {
+  const handleToggleAgentMode = useCallback(async () => {
     if (isHandlingToggleRef.current) {
       return
     }
 
     isHandlingToggleRef.current = true
+
+    // Toggle the mode first
     toggleAgentMode()
 
-    setTimeout(() => {
+    // Show window but keep pill size
+    if (window.electronAPI && window.electronAPI.expandWindowForRecording) {
+      await window.electronAPI.expandWindowForRecording()
+    }
+
+    // Show mode indicator UI
+    setShowModeIndicator(true)
+
+    // Auto-hide after 1 second
+    setTimeout(async () => {
+      setShowModeIndicator(false)
+
+      // Hide window after showing indicator
+      if (window.electronAPI && window.electronAPI.hideWindow) {
+        await window.electronAPI.hideWindow()
+      }
+
       isHandlingToggleRef.current = false
-    }, 500)
-  }, [toggleAgentMode, isAgentMode])
+    }, 1000)
+  }, [toggleAgentMode])
 
   // Set up global shortcuts once on mount
   useEffect(() => {
@@ -132,6 +136,16 @@ const DictationView = () => {
       })
     }
 
+    // Mode indicator listener (from main process)
+    if (window.electronAPI.onShowModeIndicator) {
+      window.electronAPI.onShowModeIndicator(() => {
+        setShowModeIndicator(true)
+        setTimeout(() => {
+          setShowModeIndicator(false)
+        }, 1000)
+      })
+    }
+
     // Cleanup function
     return () => {
       // Note: In a real implementation, you might want to remove listeners
@@ -153,70 +167,26 @@ const DictationView = () => {
 
   return (
     <div
-      className={`w-full h-full flex items-center justify-center bg-black rounded-full ${
+      className={`w-full h-full flex items-center justify-center bg-black/50 backdrop-blur-lg rounded-full ${
         isAgentMode ? 'border-2 border-lime-400' : ''
       }`}
     >
-      {/* Draggable area - disabled in pill mode */}
-      {isExpanded && <div className="absolute inset-0 cursor-move" style={{ WebkitAppRegion: 'drag' }} />}
-
       {/* Main content */}
-      <div className="relative z-10 flex items-center justify-center w-full h-full px-2">
-        {isExpanded ? (
-          // Expanded view with sound wave
-          <div className="flex items-center justify-center rounded-full">
-            <SoundWaveVisualizer audioLevel={audioLevel} isRecording={isRecording} isAgentMode={isAgentMode} />
-
-            {/* Processing indicator */}
-            {isProcessing && (
-              <div className="absolute bottom-1 left-1 flex items-center space-x-1">
-                <div
-                  className="w-0.5 h-0.5 bg-blue-400 rounded-full animate-pulse"
-                  style={{ animationDelay: '0.2s' }}
-                />
-                <div
-                  className="w-0.5 h-0.5 bg-blue-400 rounded-full animate-pulse"
-                  style={{ animationDelay: '0.4s' }}
-                />
-              </div>
-            )}
+      <div className="relative z-10 flex items-center justify-center w-full h-full px-1">
+        {showModeIndicator ? (
+          // Mode indicator - show mode name in small pill
+          <div className={`text-[8px] font-semibold ${isAgentMode ? 'text-lime-400' : 'text-white'}`}>
+            {isAgentMode ? 'Agent' : 'Normal'}
           </div>
+        ) : isRecording ? (
+          // Recording - show real-time audio visualizer
+          <RecordingWave audioLevel={audioLevel} isAgentMode={isAgentMode} />
+        ) : showProcessingWave ? (
+          // Processing - show animated wave
+          <ProcessingWave isAgentMode={isAgentMode} />
         ) : (
-          // Pill mode - show different states
-          <div className="w-full h-full flex items-center justify-center">
-            {showProcessingWave ? (
-              // Processing state - waving loader animation (lime for agent mode, blue for normal)
-              <div className="flex items-center space-x-0.5">
-                <div
-                  className={`w-0.5 h-1 rounded-full wave-bar ${isAgentMode ? 'bg-lime-400' : 'bg-blue-400'}`}
-                  style={{ animationDelay: '0ms' }}
-                />
-                <div
-                  className={`w-0.5 h-1 rounded-full wave-bar ${isAgentMode ? 'bg-lime-400' : 'bg-blue-400'}`}
-                  style={{ animationDelay: '100ms' }}
-                />
-                <div
-                  className={`w-0.5 h-1 rounded-full wave-bar ${isAgentMode ? 'bg-lime-400' : 'bg-blue-400'}`}
-                  style={{ animationDelay: '200ms' }}
-                />
-                <div
-                  className={`w-0.5 h-1 rounded-full wave-bar ${isAgentMode ? 'bg-lime-400' : 'bg-blue-400'}`}
-                  style={{ animationDelay: '300ms' }}
-                />
-                <div
-                  className={`w-0.5 h-1 rounded-full wave-bar ${isAgentMode ? 'bg-lime-400' : 'bg-blue-400'}`}
-                  style={{ animationDelay: '400ms' }}
-                />
-                <div
-                  className={`w-0.5 h-1 rounded-full wave-bar ${isAgentMode ? 'bg-lime-400' : 'bg-blue-400'}`}
-                  style={{ animationDelay: '500ms' }}
-                />
-              </div>
-            ) : (
-              // Default state - simple circle
-              <div className="w-0 h-0 bg-gray-900 rounded-full" />
-            )}
-          </div>
+          // Default state - simple circle
+          <div className="w-0 h-0 bg-gray-900 rounded-full" />
         )}
       </div>
     </div>

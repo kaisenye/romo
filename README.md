@@ -40,11 +40,32 @@ AI-powered dictation app for macOS. Records audio via global shortcuts, transcri
 
 ## Usage
 
+### First Launch
+
+On first launch, Romo will guide you through a quick onboarding process:
+
+1. **Welcome** - Introduction to Romo's features
+2. **Permissions** - Grant microphone and screen recording access
+3. **Shortcuts** - Learn keyboard shortcuts
+
+### Daily Use
+
 1. **Launch**: App shows as tiny pill at bottom center of screen
 2. **Record**: Press `Cmd+Shift+D` to start recording (pill expands)
 3. **Stop**: Press `Cmd+Shift+D` again to stop, transcribe, and refine
 4. **Auto-paste**: Refined text automatically pastes to focused app
 5. **Tray**: Access settings and controls from menu bar icon
+
+### Development Mode
+
+- **Normal dev mode**: `npm run electron:dev` (shows onboarding for first-time users)
+- **Onboarding dev mode**: `npm run electron:dev:onboarding` (persistent onboarding for UI work)
+- **Skip onboarding**: `npm run electron:dev:skip-onboarding` (bypasses onboarding check)
+- **Reset onboarding**: From DevTools console: `await window.electronAPI.resetOnboarding()`
+
+**Tip**: Use `npm run electron:dev:onboarding` when working on the onboarding UI - it keeps the window open and loops on completion.
+
+See [docs/ONBOARDING.md](docs/ONBOARDING.md) for detailed onboarding documentation.
 
 ## Build & Distribution
 

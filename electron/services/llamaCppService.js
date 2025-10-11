@@ -170,7 +170,6 @@ class LlamaCppService extends BaseAIService {
     ]
   }
 
-
   /**
    * Make request to Llama.cpp server
    * Refactored to use HttpUtils for cleaner HTTP handling
@@ -185,7 +184,7 @@ class LlamaCppService extends BaseAIService {
       const requestPayload = HttpUtils.buildChatRequest(messages, {
         maxTokens: 500,
         temperature: 0.1,
-        topP: 0.5
+        topP: 0.5,
       })
 
       console.log('Making HTTP request...')

@@ -1,7 +1,7 @@
 const { Tray, Menu, nativeImage } = require('electron')
 const path = require('path')
 const fs = require('fs')
-const { ICON_PATHS, APP_CONFIG } = require('../utils/Constants.js')
+const { APP_CONFIG } = require('../utils/Constants.js')
 
 /**
  * TrayManager - Extracted from main.js
