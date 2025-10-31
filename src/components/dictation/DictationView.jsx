@@ -1,12 +1,14 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react'
 import useDictationStore from '../../stores/dictationStore'
 import useAudioRecording from '../../hooks/useAudioRecording'
+import { useAuth } from '../../providers/AuthProvider'
 import RecordingWave from './RecordingWave'
 import ProcessingWave from './ProcessingWave'
 import '../../styles/animations.css'
 
 const DictationView = () => {
   const { error, isAgentMode, toggleAgentMode } = useDictationStore()
+  const { isAuthenticated } = useAuth()
   const [showProcessingWave, setShowProcessingWave] = useState(false)
   const [showModeIndicator, setShowModeIndicator] = useState(false)
 
@@ -34,6 +36,18 @@ const DictationView = () => {
 
   // Press and hold behavior handlers
   const handleStartRecording = useCallback(async () => {
+    // CRITICAL AUTH GUARD: Prevent recording if not authenticated
+    if (!isAuthenticated) {
+      console.warn('Recording blocked: User not authenticated')
+      useDictationStore.getState().setError('Please sign in to use dictation')
+
+      // Show notification
+      if (window.electronAPI && window.electronAPI.showNotification) {
+        await window.electronAPI.showNotification('Authentication Required', 'Please sign in to use dictation features')
+      }
+      return
+    }
+
     try {
       // Show window if hidden
       if (window.electronAPI && window.electronAPI.expandWindowForRecording) {
@@ -45,7 +59,7 @@ const DictationView = () => {
       console.error('Failed to start recording:', error)
       useDictationStore.getState().setError('Failed to access microphone')
     }
-  }, [startRecording])
+  }, [startRecording, isAuthenticated])
 
   const handleStopRecording = useCallback(async () => {
     try {

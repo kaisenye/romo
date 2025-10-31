@@ -2,18 +2,23 @@ import React, { useEffect, useState } from 'react'
 import DictationView from './components/dictation/DictationView'
 import Dashboard from './components/dashboard/Dashboard'
 import OnboardingFlow from './components/onboarding/OnboardingFlow'
+import AuthWindow from './components/auth/AuthWindow'
+import { useAuth } from './providers/AuthProvider'
 import useDictationStore from './stores/dictationStore'
 
 function App() {
   const { setWindowVisible } = useDictationStore()
+  const { isAuthenticated, loading: authLoading } = useAuth()
   const [isDashboard, setIsDashboard] = useState(false)
   const [isOnboarding, setIsOnboarding] = useState(false)
+  const [isAuth, setIsAuth] = useState(false)
 
-  // Check URL hash for dashboard/onboarding mode
+  // Check URL hash for dashboard/onboarding/auth mode
   useEffect(() => {
     const checkHash = () => {
       setIsDashboard(window.location.hash === '#dashboard')
       setIsOnboarding(window.location.hash === '#onboarding')
+      setIsAuth(window.location.hash === '#auth')
     }
 
     checkHash()
@@ -41,11 +46,6 @@ function App() {
 
         // Handle tray events
         if (window.electronAPI) {
-          window.electronAPI.onTrayStartDictation(() => {
-            console.log('Tray start dictation clicked')
-            // Could trigger recording start here
-          })
-
           window.electronAPI.onTrayOpenSettings(() => {
             console.log('Tray dashboard clicked')
             // Dashboard will be opened by the TrayManager in a separate window
@@ -62,7 +62,12 @@ function App() {
     initializeApp()
   }, [setWindowVisible])
 
-  // Show onboarding, dashboard, or dictation based on hash
+  // Show auth window (dedicated authentication window)
+  if (isAuth) {
+    return <AuthWindow />
+  }
+
+  // Show onboarding flow
   if (isOnboarding) {
     return (
       <OnboardingFlow
@@ -76,6 +81,7 @@ function App() {
     )
   }
 
+  // Show dashboard (doesn't require auth, but will show auth prompt inside)
   if (isDashboard) {
     return (
       <div className="w-full h-screen">
@@ -93,6 +99,30 @@ function App() {
     )
   }
 
+  // Main dictation view - REQUIRES authentication
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-900">
+        <div className="text-white">Loading...</div>
+      </div>
+    )
+  }
+
+  // CRITICAL: Block dictation if not authenticated
+  // This should never show because main.js should open auth window instead
+  if (!isAuthenticated) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-900">
+        <div className="text-center text-white">
+          <p className="text-lg mb-2">Authentication Required</p>
+          <p className="text-sm text-gray-400">Please sign in to use dictation</p>
+        </div>
+      </div>
+    )
+  }
+
+  // User is authenticated, show dictation view
   return (
     <div className="w-full h-full">
       <DictationView />

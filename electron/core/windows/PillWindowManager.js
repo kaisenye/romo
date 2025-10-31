@@ -96,6 +96,7 @@ class PillWindowManager {
       hasShadow: false, // Remove shadow for minimal appearance
       alwaysOnTop: true, // Keep window on top of all other applications
       visibleOnAllWorkspaces: true, // Show window on all desktops/spaces
+      fullscreenable: false, // Prevent fullscreen to ensure it works on all spaces
       focusable: false, // Prevent window from stealing focus
       minimizable: false, // Remove minimize button
       maximizable: false, // Remove maximize button
