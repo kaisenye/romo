@@ -169,9 +169,18 @@ class PillWindowManager {
     }
 
     const position = this.getTopCenterPosition()
+    const wasVisible = this.mainWindow.isVisible()
+
+    // ALWAYS reposition to current screen's top center
+    // This ensures window appears on whichever desktop/space is active
+    this.mainWindow.setPosition(position.x, position.y)
+
+    // Force window to be visible on all workspaces and stay on top
+    this.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+    this.mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
 
     // Show window if hidden (first dictation trigger) with slide down animation
-    if (!this.mainWindow.isVisible()) {
+    if (!wasVisible) {
       // Position window above target position (for slide down effect)
       const startY = position.y - 50
       this.mainWindow.setPosition(position.x, startY)
@@ -203,6 +212,12 @@ class PillWindowManager {
           easing: AnimationUtils.EASING.OUT_QUART,
         }
       )
+    } else {
+      // Window is already visible - ensure it appears on current desktop
+      // Hide and show again to force macOS to display it on current space
+      this.mainWindow.hide()
+      this.mainWindow.showInactive()
+      console.log('Window repositioned and refreshed on current desktop:', position)
     }
 
     // Don't expand - just return success
