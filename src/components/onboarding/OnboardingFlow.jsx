@@ -49,8 +49,8 @@ const OnboardingFlow = ({ onComplete }) => {
 
   return (
     <div className="w-full h-screen bg-gray-900 to-black flex flex-col rounded-3xl overflow-hidden">
-      {/* Progress indicator */}
-      <div className="flex items-center justify-center gap-2 pt-8 pb-4">
+      {/* Progress indicator - draggable area for window movement */}
+      <div className="flex items-center justify-center gap-2 pt-8 pb-4" style={{ WebkitAppRegion: 'drag' }}>
         {[STEPS.WELCOME, STEPS.PERMISSIONS, STEPS.SHORTCUTS].map((step) => (
           <div
             key={step}
@@ -60,7 +60,7 @@ const OnboardingFlow = ({ onComplete }) => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center" style={{ WebkitAppRegion: 'no-drag' }}>
         {currentStep === STEPS.WELCOME && <WelcomePage onNext={handleNext} />}
         {currentStep === STEPS.PERMISSIONS && <PermissionsPage onNext={handleNext} onBack={handleBack} />}
         {currentStep === STEPS.SHORTCUTS && <ShortcutsPage onNext={handleNext} onBack={handleBack} />}

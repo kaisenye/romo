@@ -49,11 +49,12 @@ class OnboardingWindowManager {
       resizable: false,
       frame: false,
       transparent: true,
-      alwaysOnTop: true,
-      skipTaskbar: false,
+      alwaysOnTop: false,
+      skipTaskbar: true,
       minimizable: false,
       maximizable: false,
       closable: false,
+      vibrancy: 'under-window',
       roundedCorners: true,
       backgroundColor: '#00000000',
       titleBarStyle: 'hidden',
@@ -72,6 +73,8 @@ class OnboardingWindowManager {
 
     // Show when ready
     this.onboardingWindow.once('ready-to-show', () => {
+      // Explicitly set window level to normal to ensure it doesn't stay on top
+      this.onboardingWindow.setAlwaysOnTop(false)
       this.onboardingWindow.show()
       this.onboardingWindow.focus()
     })

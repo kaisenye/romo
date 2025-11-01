@@ -41,10 +41,10 @@ const WINDOW_CONFIG = {
 
 // Global Shortcuts
 const SHORTCUTS = {
-  TOGGLE_DICTATION: 'CmdOrCtrl+Shift+D',
+  TOGGLE_DICTATION: 'Alt+Space',
   COPY_TRANSCRIPTION: 'CmdOrCtrl+Shift+C',
   SHOW_HIDE_APP: 'CmdOrCtrl+Shift+H',
-  TOGGLE_AGENT_MODE: 'CmdOrCtrl+Shift+S',
+  TOGGLE_AGENT_MODE: 'Alt+/',
 }
 
 // Server Configuration

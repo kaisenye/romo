@@ -24,7 +24,7 @@ class ShortcutManager {
     // Press once = start recording
     // Press again = stop recording
     const toggleSuccess = globalShortcut.register(SHORTCUTS.TOGGLE_DICTATION, async () => {
-      console.log('=== Cmd+Shift+D pressed ===')
+      console.log('=== Alt+Space pressed ===')
 
       const mainWindow = this.windowManager.getWindow()
       if (!mainWindow) return
@@ -43,9 +43,9 @@ class ShortcutManager {
     })
 
     if (!toggleSuccess) {
-      console.log('Failed to register Cmd+Shift+D shortcut')
+      console.log('Failed to register Alt+Space shortcut')
     } else {
-      console.log('Successfully registered Cmd+Shift+D - press to start, press again to stop')
+      console.log('Successfully registered Alt+Space - press to start, press again to stop')
     }
 
     // Copy transcription
@@ -80,7 +80,7 @@ class ShortcutManager {
 
     // Toggle agent mode
     const agentModeSuccess = globalShortcut.register(SHORTCUTS.TOGGLE_AGENT_MODE, () => {
-      console.log('🚀 Global shortcut CmdOrCtrl+Shift+S pressed - Toggle Agent Mode')
+      console.log('🚀 Global shortcut Alt+/ pressed - Toggle Agent Mode')
       const mainWindow = this.windowManager.getWindow()
       if (mainWindow) {
         console.log('📡 Sending global-shortcut-toggle-agent-mode event to renderer')
@@ -92,7 +92,7 @@ class ShortcutManager {
     })
 
     if (!agentModeSuccess) {
-      console.log('Failed to register CmdOrCtrl+Shift+S shortcut')
+      console.log('Failed to register Alt+/ shortcut')
     }
 
     console.log('Global shortcuts registered successfully')
