@@ -17,6 +17,7 @@
     "electron:dist": "vite build && electron-builder",
     "preview": "vite preview",
     "setup:whisper": "bash scripts/setup-whisper-cpp.sh",
+    "setup:sounds": "bash scripts/setup-sounds.sh",
     "_TODO_MVP_setup:llama": "bash scripts/setup-llama-cpp.sh",
     "verify:whisper": "bash scripts/verify-setup.sh",
     "postinstall": "echo 'Run npm run setup:whisper to setup Whisper.cpp'",

@@ -121,6 +121,7 @@ release
 # Whisper.cpp
 whisper.cpp/
 *.wav
+!public/sounds/*.wav
 *.mp3
 *.flac
 *.ogg
