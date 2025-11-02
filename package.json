@@ -17,6 +17,7 @@
     "electron:dist": "vite build && electron-builder",
     "preview": "vite preview",
     "setup:whisper": "bash scripts/setup-whisper-cpp.sh",
+    "setup:sounds": "bash scripts/setup-sounds.sh",
     "_TODO_MVP_setup:llama": "bash scripts/setup-llama-cpp.sh",
     "verify:whisper": "bash scripts/verify-setup.sh",
     "postinstall": "echo 'Run npm run setup:whisper to setup Whisper.cpp'",
@@ -38,7 +39,9 @@
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
+    "@supabase/supabase-js": "^2.75.0",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
     "electron-log": "^5.4.2",
     "electron-updater": "^6.6.2",
     "lucide-react": "^0.263.1",
@@ -84,6 +87,12 @@
         "repo": "dictation"
       }
     ],
+    "protocols": {
+      "name": "romo-protocol",
+      "schemes": [
+        "romo"
+      ]
+    },
     "files": [
       "dist/**/*",
       "dist-electron/**/*",

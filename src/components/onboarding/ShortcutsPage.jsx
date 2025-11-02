@@ -5,19 +5,19 @@ import EmergeAnimation from './EmergeAnimation'
 const ShortcutsPage = ({ onNext, onBack }) => {
   const shortcuts = [
     {
-      keys: ['⌘', 'Shift', 'D'],
-      title: 'Start/Stop',
+      keys: ['⌥', 'Space'],
+      title: 'Recording',
       icon: <Mic className="w-4 h-4" />,
       primary: true,
     },
     {
-      keys: ['⌘', 'Shift', 'S'],
+      keys: ['⌥', '/'],
       title: 'Toggle Mode',
       icon: <Sparkles className="w-4 h-4" />,
     },
     {
-      keys: ['⌘', 'Shift', 'C'],
-      title: 'Copy Output',
+      keys: ['⌘', 'V'],
+      title: 'Paste Output',
       icon: <Copy className="w-4 h-4" />,
     },
   ]
@@ -58,7 +58,7 @@ const ShortcutsPage = ({ onNext, onBack }) => {
 const ShortcutCard = ({ keys, title, icon, primary = false }) => {
   return (
     <div
-      className={`flex items-center gap-4 p-3 rounded-xl border transition-all ${
+      className={`w-full flex items-center justify-between gap-4 p-3 rounded-xl border transition-all ${
         primary ? 'border-blue-500/50 bg-blue-500/10' : 'border-gray-700 bg-gray-800/50'
       }`}
     >
@@ -72,7 +72,7 @@ const ShortcutCard = ({ keys, title, icon, primary = false }) => {
           </React.Fragment>
         ))}
       </div>
-      <div className="flex-1 flex items-center gap-2">
+      <div className="flex items-end gap-2">
         {icon && <div className="text-gray-400">{icon}</div>}
         <h3 className="font-semibold text-white text-sm">{title}</h3>
       </div>

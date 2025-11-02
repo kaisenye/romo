@@ -1,13 +1,26 @@
 import React, { useState } from 'react'
 import useDictationStore from '../../stores/dictationStore'
+import { useAuth } from '../../providers/AuthProvider'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
-import { Settings, User, Key } from 'lucide-react'
+import { Settings, User, Key, LogOut, LogIn, Crown, ExternalLink } from 'lucide-react'
 
 const SettingsPage = () => {
-  const { userPlan, customInstructions, apiKeys, updateCustomInstructions, updateApiKey } = useDictationStore()
+  const { customInstructions, apiKeys, updateCustomInstructions, updateApiKey } = useDictationStore()
+  const { user, isAuthenticated, subscription, isSubscribed, subscriptionTier, signOut, openLogin } = useAuth()
   const [localInstructions, setLocalInstructions] = useState(customInstructions)
   const [localApiKeys, setLocalApiKeys] = useState(apiKeys)
+
+  // Helper function to get display plan name
+  const getDisplayPlanName = () => {
+    if (!subscriptionTier) return 'Basic'
+    if (subscriptionTier.includes('pro')) return 'Pro'
+    if (subscriptionTier === 'agent') return 'Agent'
+    return subscriptionTier.charAt(0).toUpperCase() + subscriptionTier.slice(1)
+  }
+
+  // Helper function to check if user is on basic/free plan
+  const isBasicPlan = !subscriptionTier || subscriptionTier === 'basic'
 
   const handleSaveInstructions = () => {
     updateCustomInstructions(localInstructions)
@@ -27,28 +40,127 @@ const SettingsPage = () => {
   return (
     <div className="flex-1 px-6 pt-6 pb-16 overflow-y-auto">
       <div className="max-w-4xl space-y-8">
-        {/* Plan Information */}
+        {/* Account Information */}
         <section>
           <div className="flex items-center space-x-2 mb-4">
             <User className="w-5 h-5 text-neutral-400" />
+            <h2 className="text-base font-semibold text-neutral-100">Account</h2>
+          </div>
+          <div className="bg-neutral-800 rounded-lg p-4 border border-neutral-700">
+            {isAuthenticated ? (
+              <div className="space-y-4">
+                {/* User Info */}
+                <div>
+                  <label className="text-xs text-neutral-400 block mb-1">Email</label>
+                  <p className="text-sm text-neutral-100">{user?.email || 'Unknown'}</p>
+                </div>
+
+                {/* Auth Status */}
+                <div>
+                  <label className="text-xs text-neutral-400 block mb-1">Status</label>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-neutral-100">Signed In</span>
+                  </div>
+                </div>
+
+                {/* Subscription Status */}
+                {isSubscribed && subscription && (
+                  <div>
+                    <label className="text-xs text-neutral-400 block mb-1">Subscription</label>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-neutral-100 capitalize">{subscriptionTier || 'Unknown'} Plan</span>
+                      <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded">
+                        {subscription.status}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="pt-2 flex gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => window.electronAPI.openWebDashboard()}
+                    className="flex items-center space-x-2"
+                  >
+                    <User className="w-4 h-4" />
+                    <span>User Profile</span>
+                  </Button>
+                  <Button variant="danger" size="sm" onClick={signOut} className="flex items-center space-x-2">
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out</span>
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-neutral-400 mb-4">
+                  You are not signed in. Sign in to access your account and subscription.
+                </p>
+                <Button variant="primary" size="sm" onClick={openLogin} className="flex items-center space-x-2 mx-auto">
+                  <LogIn className="w-4 h-4" />
+                  <span>Sign In with Browser</span>
+                </Button>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Plan Information */}
+        <section>
+          <div className="flex items-center space-x-2 mb-4">
+            <Settings className="w-5 h-5 text-neutral-400" />
             <h2 className="text-base font-semibold text-neutral-100">Current Plan</h2>
           </div>
           <div className="bg-neutral-800 rounded-lg p-4 border border-neutral-700">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-semibold text-base text-neutral-100 mb-2">{userPlan} Plan</h3>
-                <p className="text-neutral-400 text-xs">
-                  {userPlan === 'Basic'
-                    ? 'Limited dictation features with local processing'
-                    : 'Unlimited dictation with advanced AI features'}
-                </p>
+            {isAuthenticated ? (
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-semibold text-base text-neutral-100 mb-2">{getDisplayPlanName()} Plan</h3>
+                  <p className="text-neutral-400 text-xs">
+                    {isBasicPlan
+                      ? 'Limited dictation features with local processing'
+                      : subscriptionTier?.includes('pro')
+                        ? 'Unlimited dictation with advanced AI features'
+                        : 'Full access with agent mode and premium features'}
+                  </p>
+                </div>
+                {isBasicPlan ? (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => window.electronAPI.openWebDashboard()}
+                    className="flex items-center space-x-2"
+                  >
+                    <Crown className="w-4 h-4" />
+                    <span>Upgrade Plan</span>
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => window.electronAPI.openWebDashboard()}
+                    className="flex items-center space-x-2"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Manage Plan</span>
+                  </Button>
+                )}
               </div>
-              {userPlan === 'Basic' && (
-                <Button size="sm" variant="primary">
-                  Agent Mode Coming Soon!
+            ) : (
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-semibold text-base text-neutral-100 mb-2">Basic Plan</h3>
+                  <p className="text-neutral-400 text-xs">Sign in to unlock premium features</p>
+                </div>
+                <Button size="sm" variant="primary" onClick={openLogin} className="flex items-center space-x-2">
+                  <LogIn className="w-4 h-4" />
+                  <span>Sign In</span>
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </section>
 

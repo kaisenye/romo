@@ -47,7 +47,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onGlobalShortcutToggleDictation: (callback) => ipcRenderer.on('global-shortcut-toggle-dictation', callback),
   onGlobalShortcutToggleAgentMode: (callback) => ipcRenderer.on('global-shortcut-toggle-agent-mode', callback),
   onGlobalShortcutCopyTranscription: (callback) => ipcRenderer.on('global-shortcut-copy-transcription', callback),
-  onTrayStartDictation: (callback) => ipcRenderer.on('tray-start-dictation', callback),
   onTrayOpenSettings: (callback) => ipcRenderer.on('tray-open-settings', callback),
   onWindowPositionChanged: (callback) => ipcRenderer.on('window-position-changed', callback),
 
@@ -77,4 +76,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPermissionStatus: () => ipcRenderer.invoke('get-permission-status'),
   requestMicrophonePermission: () => ipcRenderer.invoke('request-microphone-permission'),
   requestScreenPermission: () => ipcRenderer.invoke('request-screen-permission'),
+
+  // Auth operations
+  getAuthSession: () => ipcRenderer.invoke('auth-get-session'),
+  getAuthUser: () => ipcRenderer.invoke('auth-get-user'),
+  getSubscription: () => ipcRenderer.invoke('auth-get-subscription'),
+  signOut: () => ipcRenderer.invoke('auth-sign-out'),
+  openWebLogin: () => ipcRenderer.invoke('auth-open-web-login'),
+  openWebDashboard: () => ipcRenderer.invoke('auth-open-web-dashboard'),
+  refreshSubscription: () => ipcRenderer.invoke('auth-refresh-subscription'),
+  onAuthStateChange: (callback) => ipcRenderer.on('auth-state-changed', callback),
 })

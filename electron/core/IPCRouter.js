@@ -408,6 +408,93 @@ class IPCRouter {
   }
 
   /**
+   * Register authentication-related IPC handlers
+   */
+  registerAuthHandlers() {
+    const supabaseAuthService = require('../services/SupabaseAuthService')
+    const userSubscriptionService = require('../services/UserSubscriptionService')
+    const { AUTH_CONFIG } = require('../utils/Constants')
+    const { shell } = require('electron')
+
+    // Get current auth session
+    ipcMain.handle(
+      'auth-get-session',
+      ErrorUtils.wrapIPCHandler(async () => {
+        const session = await supabaseAuthService.getSession()
+        return session
+      }, 'get auth session')
+    )
+
+    // Get current user
+    ipcMain.handle(
+      'auth-get-user',
+      ErrorUtils.wrapIPCHandler(async () => {
+        const user = await supabaseAuthService.getUser()
+        return user
+      }, 'get auth user')
+    )
+
+    // Get user subscription
+    ipcMain.handle(
+      'auth-get-subscription',
+      ErrorUtils.wrapIPCHandler(async () => {
+        const user = await supabaseAuthService.getUser()
+        if (!user) {
+          return null
+        }
+        const subscription = await userSubscriptionService.fetchSubscription(user.id)
+        return subscription
+      }, 'get user subscription')
+    )
+
+    // Sign out
+    ipcMain.handle(
+      'auth-sign-out',
+      ErrorUtils.wrapIPCHandler(async () => {
+        await supabaseAuthService.signOut()
+
+        // Notify renderer
+        const mainWindow = this.windowManager.getWindow()
+        if (mainWindow) {
+          mainWindow.webContents.send('auth-state-changed', { user: null })
+        }
+
+        return { success: true }
+      }, 'sign out')
+    )
+
+    // Open web login in browser
+    ipcMain.handle('auth-open-web-login', () => {
+      const loginUrl = AUTH_CONFIG.WEB_LOGIN_URL
+      console.log('Opening web login:', loginUrl)
+      shell.openExternal(loginUrl)
+      return { success: true }
+    })
+
+    // Open web dashboard in browser
+    ipcMain.handle('auth-open-web-dashboard', () => {
+      const dashboardUrl = AUTH_CONFIG.WEB_DASHBOARD_URL
+      shell.openExternal(dashboardUrl)
+      return { success: true }
+    })
+
+    // Refresh subscription data
+    ipcMain.handle(
+      'auth-refresh-subscription',
+      ErrorUtils.wrapIPCHandler(async () => {
+        const user = await supabaseAuthService.getUser()
+        if (!user) {
+          return null
+        }
+        const subscription = await userSubscriptionService.refreshSubscription(user.id)
+        return subscription
+      }, 'refresh subscription')
+    )
+
+    console.log('Auth IPC handlers registered')
+  }
+
+  /**
    * Unregister all handlers (useful for cleanup)
    */
   unregisterHandlers() {
@@ -443,6 +530,13 @@ class IPCRouter {
       'get-permission-status',
       'request-microphone-permission',
       'request-screen-permission',
+      'auth-get-session',
+      'auth-get-user',
+      'auth-get-subscription',
+      'auth-sign-out',
+      'auth-open-web-login',
+      'auth-open-web-dashboard',
+      'auth-refresh-subscription',
     ]
 
     handlers.forEach((handler) => {

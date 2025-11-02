@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import aiService from '../services/aiService'
+import soundFeedback from '../utils/soundFeedback'
 
 // Feature flags from environment variables
 const ENABLE_AI_REFINEMENT = import.meta.env.VITE_ENABLE_AI_REFINEMENT === 'true'
@@ -125,6 +126,9 @@ const useAudioRecording = (options = {}) => {
       // Start recording with longer chunks for full recording
       mediaRecorder.start(10000) // 10 second chunks for full recording
       setIsRecording(true)
+
+      // Play start sound feedback
+      soundFeedback.playStart()
     } catch (err) {
       console.error('Error starting recording:', err)
       setError(err.message)
@@ -232,6 +236,9 @@ const useAudioRecording = (options = {}) => {
 
       setAudioLevel(0)
       mediaRecorderRef.current = null
+
+      // Play stop sound feedback
+      soundFeedback.playStop()
     } catch (error) {
       console.error('Error stopping recording:', error)
       setError(`Failed to stop recording: ${error.message}`)

@@ -73,18 +73,8 @@ class TrayManager {
       return // Don't create tray if it fails completely
     }
 
-    // Create context menu
+    // Create context menu (dictation can only be triggered via keyboard shortcut)
     const contextMenu = Menu.buildFromTemplate([
-      {
-        label: 'Start Dictation',
-        click: async () => {
-          const mainWindow = this.windowManager.getWindow()
-          if (mainWindow) {
-            await this.windowManager.showWindowOnCurrentDesktop()
-            mainWindow.webContents.send('tray-start-dictation')
-          }
-        },
-      },
       {
         label: 'Dashboard',
         click: async () => {

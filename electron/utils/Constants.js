@@ -41,10 +41,10 @@ const WINDOW_CONFIG = {
 
 // Global Shortcuts
 const SHORTCUTS = {
-  TOGGLE_DICTATION: 'CmdOrCtrl+Shift+D',
+  TOGGLE_DICTATION: 'Alt+Space',
   COPY_TRANSCRIPTION: 'CmdOrCtrl+Shift+C',
   SHOW_HIDE_APP: 'CmdOrCtrl+Shift+H',
-  TOGGLE_AGENT_MODE: 'CmdOrCtrl+Shift+S',
+  TOGGLE_AGENT_MODE: 'Alt+/',
 }
 
 // Server Configuration
@@ -191,6 +191,19 @@ const CSP = {
   CONNECT_SRC: "'self' ws: wss:",
 }
 
+// Supabase Configuration
+const SUPABASE_CONFIG = {
+  URL: process.env.SUPABASE_URL,
+  ANON_KEY: process.env.SUPABASE_ANON_KEY,
+}
+
+// Auth Configuration
+const AUTH_CONFIG = {
+  WEB_LOGIN_URL: process.env.WEB_LOGIN_URL || 'http://localhost:3000/auth/sign-in?source=desktop',
+  WEB_DASHBOARD_URL: process.env.WEB_DASHBOARD_URL || 'http://localhost:3000/dashboard',
+  PROTOCOL_SCHEME: 'romo',
+}
+
 // Export all constants
 module.exports = {
   WINDOW_CONFIG,
@@ -206,4 +219,6 @@ module.exports = {
   REQUEST_CONFIG,
   APP_CONFIG,
   CSP,
+  SUPABASE_CONFIG,
+  AUTH_CONFIG,
 }
