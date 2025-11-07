@@ -3,6 +3,8 @@
  * Provides audio feedback for recording start/stop events
  */
 
+/* global Audio */
+
 class SoundFeedback {
   constructor() {
     this.enabled = true

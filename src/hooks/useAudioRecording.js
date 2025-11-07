@@ -285,7 +285,15 @@ const useAudioRecording = (options = {}) => {
           .join('')
 
         const transcriptStartTime = Date.now() // Track processing start time
-        const result = await window.electronAPI.processAudioChunk(hexString, sampleRate)
+
+        // Get selected language from store (read fresh every time)
+        const selectedLanguage = window.useDictationStore
+          ? window.useDictationStore.getState().selectedLanguage
+          : 'auto'
+
+        const result = await window.electronAPI.processAudioChunk(hexString, sampleRate, {
+          language: selectedLanguage,
+        })
 
         let finalText = ''
         if (result && result.success && result.result && result.result.text) {

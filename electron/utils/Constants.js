@@ -62,7 +62,36 @@ const SERVER_CONFIG = {
 // AI Model Configuration
 const AI_MODELS = {
   WHISPER: {
-    PREFERRED_MODELS: ['ggml-small.en.bin', 'ggml-small.bin'],
+    PREFERRED_MODELS: ['ggml-small.bin'], // Multilingual model only (supports 99 languages)
+    // Supported languages for multilingual model (Whisper supports 99 languages)
+    // Common languages - full list available at: https://github.com/openai/whisper#available-models-and-languages
+    SUPPORTED_LANGUAGES: {
+      auto: 'Auto Detect',
+      en: 'English',
+      zh: 'Chinese (Simplified)',
+      'zh-TW': 'Chinese (Traditional)',
+      es: 'Spanish',
+      fr: 'French',
+      de: 'German',
+      ja: 'Japanese',
+      ko: 'Korean',
+      pt: 'Portuguese',
+      ru: 'Russian',
+      ar: 'Arabic',
+      hi: 'Hindi',
+      it: 'Italian',
+      nl: 'Dutch',
+      pl: 'Polish',
+      tr: 'Turkish',
+      vi: 'Vietnamese',
+      th: 'Thai',
+    },
+    DEFAULT_LANGUAGE: 'auto', // Auto-detect by default
+    // Whisper prompts to guide output format (helps with Traditional vs Simplified Chinese)
+    LANGUAGE_PROMPTS: {
+      zh: '以下是普通话的句子。', // Simplified Chinese prompt
+      'zh-TW': '以下是國語的句子。', // Traditional Chinese prompt
+    },
   },
   LLAMA: {
     PREFERRED_MODELS: [

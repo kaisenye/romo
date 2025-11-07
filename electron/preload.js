@@ -8,10 +8,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // AI Service operations
   aiInitialize: () => ipcRenderer.invoke('ai-initialize'),
-  aiProcessChunk: (audioBuffer, sampleRate) => ipcRenderer.invoke('ai-process-chunk', audioBuffer, sampleRate),
-  aiProcessFile: (audioFilePath) => ipcRenderer.invoke('ai-process-file', audioFilePath),
-  aiProcessFullRecording: (audioBuffer, sampleRate, meetingId) =>
-    ipcRenderer.invoke('ai-process-full-recording', audioBuffer, sampleRate, meetingId),
+  aiProcessChunk: (audioBuffer, sampleRate, options) =>
+    ipcRenderer.invoke('ai-process-chunk', audioBuffer, sampleRate, options),
+  aiProcessFile: (audioFilePath, options) => ipcRenderer.invoke('ai-process-file', audioFilePath, options),
+  aiProcessFullRecording: (audioBuffer, sampleRate, meetingId, options) =>
+    ipcRenderer.invoke('ai-process-full-recording', audioBuffer, sampleRate, meetingId, options),
   saveLiveTranscriptionSegments: (segments, meetingId) =>
     ipcRenderer.invoke('save-live-transcription-segments', segments, meetingId),
   aiGetStatus: () => ipcRenderer.invoke('ai-get-status'),
@@ -24,8 +25,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // agentProcessRequest: (transcript) => ipcRenderer.invoke('agent-process-request', transcript),
 
   // Audio processing methods for React components (aliases for convenience)
-  processAudioChunk: (audioBuffer, sampleRate = 16000) =>
-    ipcRenderer.invoke('ai-process-chunk', audioBuffer, sampleRate),
+  processAudioChunk: (audioBuffer, sampleRate = 16000, options = {}) =>
+    ipcRenderer.invoke('ai-process-chunk', audioBuffer, sampleRate, options),
 
   // Window operations
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
@@ -66,6 +67,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Screen capture operations
   captureScreen: (options) => ipcRenderer.invoke('capture-screen', options),
+
+  // Settings operations
+  getSetting: (key, defaultValue) => ipcRenderer.invoke('get-setting', key, defaultValue),
+  setSetting: (key, value) => ipcRenderer.invoke('set-setting', key, value),
+  onSettingChanged: (callback) => ipcRenderer.on('setting-changed', (event, key, value) => callback(key, value)),
 
   // Onboarding operations
   checkOnboardingStatus: () => ipcRenderer.invoke('check-onboarding-status'),

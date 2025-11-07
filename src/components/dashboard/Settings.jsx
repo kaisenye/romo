@@ -1,15 +1,40 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import useDictationStore from '../../stores/dictationStore'
 import { useAuth } from '../../providers/AuthProvider'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
-import { Settings, User, Key, LogOut, LogIn, Crown, ExternalLink } from 'lucide-react'
+import { Settings, User, Key, LogOut, LogIn, Crown, ExternalLink, Globe } from 'lucide-react'
+
+// Supported languages (from Constants.js in electron)
+const SUPPORTED_LANGUAGES = {
+  auto: 'Auto Detect',
+  en: 'English',
+  zh: 'Chinese (Simplified)',
+  'zh-TW': 'Chinese (Traditional)',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  ja: 'Japanese',
+  ko: 'Korean',
+  pt: 'Portuguese',
+  ru: 'Russian',
+  ar: 'Arabic',
+  hi: 'Hindi',
+  it: 'Italian',
+  nl: 'Dutch',
+  pl: 'Polish',
+  tr: 'Turkish',
+  vi: 'Vietnamese',
+  th: 'Thai',
+}
 
 const SettingsPage = () => {
-  const { customInstructions, apiKeys, updateCustomInstructions, updateApiKey } = useDictationStore()
+  const { customInstructions, apiKeys, selectedLanguage, updateCustomInstructions, updateApiKey, updateLanguage } =
+    useDictationStore()
   const { user, isAuthenticated, subscription, isSubscribed, subscriptionTier, signOut, openLogin } = useAuth()
   const [localInstructions, setLocalInstructions] = useState(customInstructions)
   const [localApiKeys, setLocalApiKeys] = useState(apiKeys)
+  const [localLanguage, setLocalLanguage] = useState(selectedLanguage)
 
   // Helper function to get display plan name
   const getDisplayPlanName = () => {
@@ -36,6 +61,16 @@ const SettingsPage = () => {
       [provider]: value,
     }))
   }
+
+  const handleLanguageChange = async (language) => {
+    setLocalLanguage(language)
+    await updateLanguage(language)
+  }
+
+  // Sync local language with store when it changes
+  useEffect(() => {
+    setLocalLanguage(selectedLanguage)
+  }, [selectedLanguage])
 
   return (
     <div className="flex-1 px-6 pt-6 pb-16 overflow-y-auto">
@@ -161,6 +196,33 @@ const SettingsPage = () => {
                 </Button>
               </div>
             )}
+          </div>
+        </section>
+
+        {/* Language Selection */}
+        <section>
+          <div className="flex items-center space-x-2 mb-4">
+            <Globe className="w-5 h-5 text-neutral-400" />
+            <h2 className="text-base font-semibold text-neutral-100">Dictation Language</h2>
+          </div>
+          <div className="bg-neutral-800 rounded-lg p-4 border border-neutral-700">
+            <p className="text-xs text-neutral-400 mb-4">
+              Select the language for speech transcription. Auto-detect will automatically identify the spoken language.
+            </p>
+            <select
+              value={localLanguage}
+              onChange={(e) => handleLanguageChange(e.target.value)}
+              className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-sm text-neutral-100 focus:ring-1 focus:ring-neutral-500 focus:border-neutral-500"
+            >
+              {Object.entries(SUPPORTED_LANGUAGES).map(([code, name]) => (
+                <option key={code} value={code}>
+                  {name}
+                </option>
+              ))}
+            </select>
+            <p className="text-[10px] text-neutral-500 mt-2">
+              Currently selected: <span className="text-neutral-300">{SUPPORTED_LANGUAGES[localLanguage]}</span>
+            </p>
           </div>
         </section>
 

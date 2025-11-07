@@ -17,6 +17,7 @@ const useDictationStore = create((set) => ({
     openai: '',
     claude: '',
   },
+  selectedLanguage: 'auto', // Whisper transcription language (default: auto-detect)
 
   // Dictation History
   dictationHistory: [],
@@ -80,6 +81,29 @@ const useDictationStore = create((set) => ({
         [provider]: key,
       },
     }))
+  },
+
+  updateLanguage: async (language) => {
+    set({ selectedLanguage: language })
+    // Persist to Electron settings
+    if (window.electronAPI && window.electronAPI.setSetting) {
+      await window.electronAPI.setSetting('selectedLanguage', language)
+    }
+  },
+
+  // Load persisted language from Electron settings
+  loadLanguage: async () => {
+    if (window.electronAPI && window.electronAPI.getSetting) {
+      try {
+        const savedLanguage = await window.electronAPI.getSetting('selectedLanguage', 'auto')
+        set({ selectedLanguage: savedLanguage })
+        return savedLanguage
+      } catch (error) {
+        console.error('Failed to load language setting:', error)
+        return 'auto'
+      }
+    }
+    return 'auto'
   },
 
   reset: () => {

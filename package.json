@@ -139,7 +139,7 @@
         "from": "whisper.cpp/models/",
         "to": "whisper.cpp/models/",
         "filter": [
-          "ggml-small.en.bin"
+          "ggml-small.bin"
         ]
       }
     ],
