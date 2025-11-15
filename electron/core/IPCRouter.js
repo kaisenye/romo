@@ -133,9 +133,9 @@ class IPCRouter {
       }
     })
 
-    ipcMain.handle('ai-process-chunk', async (event, audioBuffer, sampleRate) => {
+    ipcMain.handle('ai-process-chunk', async (event, audioBuffer, sampleRate, options = {}) => {
       try {
-        const result = await this.whisperService.processAudioChunk(audioBuffer, sampleRate)
+        const result = await this.whisperService.processAudioChunk(audioBuffer, sampleRate, options)
         return { success: true, result }
       } catch (error) {
         console.error('Failed to process audio chunk:', error)
@@ -143,11 +143,12 @@ class IPCRouter {
       }
     })
 
-    ipcMain.handle('ai-process-full-recording', async (event, audioBuffer, sampleRate, meetingId) => {
+    ipcMain.handle('ai-process-full-recording', async (event, audioBuffer, sampleRate, meetingId, options = {}) => {
       try {
         console.log(`Processing full recording for meeting ${meetingId}`)
         console.log('Audio buffer type:', typeof audioBuffer)
         console.log('Sample rate:', sampleRate)
+        console.log('Language:', options?.language || 'auto')
 
         if (!audioBuffer || audioBuffer.length === 0) {
           console.error('Audio buffer is empty or invalid')
@@ -155,7 +156,7 @@ class IPCRouter {
         }
 
         // Process the audio using the same method as real-time chunks
-        const result = await this.whisperService.processAudioChunk(audioBuffer, sampleRate)
+        const result = await this.whisperService.processAudioChunk(audioBuffer, sampleRate, options)
         console.log('Whisper.cpp result:', result)
 
         return { success: true, result }
@@ -289,6 +290,29 @@ class IPCRouter {
       ErrorUtils.wrapIPCHandler(async (event, options = {}) => {
         return await screenCaptureService.captureScreenshot(options)
       }, 'capture screen')
+    )
+
+    // Settings handlers
+    ipcMain.handle(
+      'get-setting',
+      ErrorUtils.wrapIPCHandler(async (event, key, defaultValue = null) => {
+        return await dictationHistoryService.getSetting(key, defaultValue)
+      }, 'get setting')
+    )
+
+    ipcMain.handle(
+      'set-setting',
+      ErrorUtils.wrapIPCHandler(async (event, key, value) => {
+        await dictationHistoryService.setSetting(key, value)
+
+        // Broadcast setting change to all windows for real-time sync
+        const { BrowserWindow } = require('electron')
+        BrowserWindow.getAllWindows().forEach((window) => {
+          window.webContents.send('setting-changed', key, value)
+        })
+
+        return true
+      }, 'set setting')
     )
 
     console.log('IPC handlers registered successfully')

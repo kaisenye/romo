@@ -47,12 +47,14 @@ class WhisperCppService extends BaseAIService {
    * Process complete audio file
    * PRESERVES EXACT FUNCTIONALITY from original
    */
-  async processAudioFile(audioFilePath) {
+  async processAudioFile(audioFilePath, options = {}) {
     this.ensureInitialized('processAudioFile')
 
     try {
+      const { language = 'auto' } = options
+
       const result = await this.runWhisperCpp(audioFilePath, {
-        language: 'en',
+        language: language === 'auto' ? undefined : language, // Let Whisper auto-detect if 'auto'
         threads: 4,
         bestOf: 5, // Higher quality for file processing
       })
@@ -68,17 +70,14 @@ class WhisperCppService extends BaseAIService {
    * Process audio chunk for real-time transcription
    * PRESERVES EXACT FUNCTIONALITY from original
    */
-  async processAudioChunk(audioBuffer, sampleRate = 16000) {
+  async processAudioChunk(audioBuffer, sampleRate = 16000, options = {}) {
     this.ensureInitialized('processAudioChunk')
 
     const requestId = this.getNextRequestId()
+    const { language = 'auto' } = options
 
     try {
-      console.log(`Processing audio chunk ${requestId}:`, {
-        bufferType: typeof audioBuffer,
-        bufferLength: audioBuffer?.length || 0,
-        sampleRate: sampleRate,
-      })
+      console.log(`Processing audio chunk ${requestId} (language: ${language})`)
 
       // Validate audio buffer
       if (!audioBuffer || audioBuffer.length === 0) {
@@ -86,7 +85,7 @@ class WhisperCppService extends BaseAIService {
         return {
           text: '',
           segments: [],
-          language: 'en',
+          language: language === 'auto' ? 'unknown' : language,
         }
       }
 
@@ -97,7 +96,7 @@ class WhisperCppService extends BaseAIService {
       // Run Whisper.cpp with JSON output for better segment parsing
       const result = await this.runWhisperCpp(tempFile, {
         outputFormat: 'json',
-        language: 'en',
+        language: language === 'auto' ? undefined : language, // Let Whisper auto-detect if 'auto'
         threads: 4,
       })
 
@@ -113,7 +112,7 @@ class WhisperCppService extends BaseAIService {
       return {
         text: '',
         segments: [],
-        language: 'en',
+        language: language === 'auto' ? 'unknown' : language,
         error: error.message,
       }
     }
@@ -160,6 +159,7 @@ class WhisperCppService extends BaseAIService {
    */
   async runWhisperCpp(audioFile, options = {}) {
     return new Promise((resolve, reject) => {
+      const { AI_MODELS } = require('../utils/Constants')
       const args = ['-m', this.modelPath, '-f', audioFile]
 
       // Add options
@@ -168,7 +168,15 @@ class WhisperCppService extends BaseAIService {
       }
 
       if (options.language) {
-        args.push('-l', options.language)
+        // Map zh-TW to zh for Whisper (Whisper only has 'zh', we use prompt to differentiate)
+        const whisperLang = options.language === 'zh-TW' ? 'zh' : options.language
+        args.push('-l', whisperLang)
+      }
+
+      // Add initial prompt to guide output (especially for Chinese variants)
+      if (options.language && AI_MODELS.WHISPER.LANGUAGE_PROMPTS[options.language]) {
+        const prompt = AI_MODELS.WHISPER.LANGUAGE_PROMPTS[options.language]
+        args.push('--prompt', prompt)
       }
 
       if (options.threads) {
@@ -361,7 +369,7 @@ class WhisperCppService extends BaseAIService {
 
   /**
    * Format result to match the expected format
-   * EXACT COPY from original implementation
+   * Enhanced with emoji replacement
    */
   formatResult(whisperResult) {
     console.log('Formatting Whisper.cpp result:', whisperResult)
@@ -405,6 +413,15 @@ class WhisperCppService extends BaseAIService {
       ]
     }
 
+    // Replace emoji mentions with actual emojis
+    text = this.replaceEmojiMentions(text)
+
+    // Also replace emoji mentions in segments
+    segments = segments.map((segment) => ({
+      ...segment,
+      text: this.replaceEmojiMentions(segment.text),
+    }))
+
     console.log('Formatted result:', { text, segments: segments.length })
 
     return {
@@ -412,6 +429,34 @@ class WhisperCppService extends BaseAIService {
       segments: segments,
       language: whisperResult.language || 'en',
     }
+  }
+
+  /**
+   * Replace emoji mentions in text with actual emojis
+   * Example: "fire emoji" -> "🔥", "thumbs up" -> "👍"
+   */
+  replaceEmojiMentions(text) {
+    const { EMOJI_REPLACEMENTS } = require('../utils/EmojiConstants')
+
+    if (!text || typeof text !== 'string') {
+      return text
+    }
+
+    let result = text
+
+    // Sort by length (longest first) to match longer phrases first
+    // e.g., "fire emoji" before "fire"
+    const sortedPhrases = Object.keys(EMOJI_REPLACEMENTS).sort((a, b) => b.length - a.length)
+
+    for (const phrase of sortedPhrases) {
+      const emoji = EMOJI_REPLACEMENTS[phrase]
+      // Case-insensitive replacement with word boundaries
+      // Use \b for word boundaries to avoid partial matches
+      const regex = new RegExp(`\\b${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi')
+      result = result.replace(regex, emoji)
+    }
+
+    return result
   }
 
   /**

@@ -93,12 +93,12 @@ echo "📦 Downloading Whisper models..."
 # Create models directory if it doesn't exist
 mkdir -p models
 
-# Download small.en model (best balance of speed and quality)
-if [ ! -f "models/ggml-small.en.bin" ]; then
-    echo "   Downloading small.en model..."
-    bash ./models/download-ggml-model.sh small.en
+# Download small multilingual model (best balance of speed and quality, supports 99 languages)
+if [ ! -f "models/ggml-small.bin" ]; then
+    echo "   Downloading small multilingual model..."
+    bash ./models/download-ggml-model.sh small
 else
-    echo "✅ small.en model already exists"
+    echo "✅ small multilingual model already exists"
 fi
 
 cd ..
@@ -130,9 +130,9 @@ fi
 # Create a simple test
 echo "🎵 Running a quick transcription test..."
 if [ -f "whisper.cpp/samples/jfk.wav" ]; then
-    echo "   Testing with JFK sample using small.en model..."
-    if [ -f "whisper.cpp/models/ggml-small.en.bin" ]; then
-        $WHISPER_BINARY -m whisper.cpp/models/ggml-small.en.bin -f whisper.cpp/samples/jfk.wav --output-json --no-prints > /tmp/whisper_test.txt 2>&1
+    echo "   Testing with JFK sample using small multilingual model..."
+    if [ -f "whisper.cpp/models/ggml-small.bin" ]; then
+        $WHISPER_BINARY -m whisper.cpp/models/ggml-small.bin -f whisper.cpp/samples/jfk.wav --output-json --no-prints > /tmp/whisper_test.txt 2>&1
         if [ $? -eq 0 ]; then
             echo "✅ Transcription test passed"
             echo "   Sample output: $(head -1 /tmp/whisper_test.txt)"
@@ -140,7 +140,7 @@ if [ -f "whisper.cpp/samples/jfk.wav" ]; then
             echo "⚠️  Transcription test failed, but installation seems OK"
         fi
     else
-        echo "⚠️  small.en model not found, skipping transcription test"
+        echo "⚠️  Model not found, skipping transcription test"
     fi
 else
     echo "⚠️  No sample audio found, skipping transcription test"
@@ -159,6 +159,7 @@ echo "   The Python service in py_service/ is no longer needed."
 echo ""
 echo "💡 Tips:"
 echo "   - The app will automatically find and use the Whisper.cpp binary"
-echo "   - Models are loaded automatically (small.en is preferred)"
+echo "   - Multilingual model (small) supports 99 languages including English"
+echo "   - Select your language in Settings > Dictation Language (default: Auto Detect)"
 echo "   - Check the console for initialization messages"
 echo "" 

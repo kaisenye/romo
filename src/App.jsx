@@ -33,6 +33,21 @@ function App() {
         // Make dictation store available globally for useAudioRecording hook
         window.useDictationStore = useDictationStore
 
+        // Load persisted language setting
+        const loadLanguage = useDictationStore.getState().loadLanguage
+        if (loadLanguage) {
+          await loadLanguage()
+        }
+
+        // Listen for setting changes from other windows (e.g., dashboard)
+        if (window.electronAPI && window.electronAPI.onSettingChanged) {
+          window.electronAPI.onSettingChanged((key, value) => {
+            if (key === 'selectedLanguage') {
+              useDictationStore.setState({ selectedLanguage: value })
+            }
+          })
+        }
+
         // Initialize AI service
         if (window.electronAPI && window.electronAPI.aiInitialize) {
           console.log('Initializing AI service...')
