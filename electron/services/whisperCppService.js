@@ -369,7 +369,7 @@ class WhisperCppService extends BaseAIService {
 
   /**
    * Format result to match the expected format
-   * EXACT COPY from original implementation
+   * Enhanced with emoji replacement
    */
   formatResult(whisperResult) {
     console.log('Formatting Whisper.cpp result:', whisperResult)
@@ -413,6 +413,15 @@ class WhisperCppService extends BaseAIService {
       ]
     }
 
+    // Replace emoji mentions with actual emojis
+    text = this.replaceEmojiMentions(text)
+
+    // Also replace emoji mentions in segments
+    segments = segments.map((segment) => ({
+      ...segment,
+      text: this.replaceEmojiMentions(segment.text),
+    }))
+
     console.log('Formatted result:', { text, segments: segments.length })
 
     return {
@@ -420,6 +429,34 @@ class WhisperCppService extends BaseAIService {
       segments: segments,
       language: whisperResult.language || 'en',
     }
+  }
+
+  /**
+   * Replace emoji mentions in text with actual emojis
+   * Example: "fire emoji" -> "🔥", "thumbs up" -> "👍"
+   */
+  replaceEmojiMentions(text) {
+    const { EMOJI_REPLACEMENTS } = require('../utils/EmojiConstants')
+
+    if (!text || typeof text !== 'string') {
+      return text
+    }
+
+    let result = text
+
+    // Sort by length (longest first) to match longer phrases first
+    // e.g., "fire emoji" before "fire"
+    const sortedPhrases = Object.keys(EMOJI_REPLACEMENTS).sort((a, b) => b.length - a.length)
+
+    for (const phrase of sortedPhrases) {
+      const emoji = EMOJI_REPLACEMENTS[phrase]
+      // Case-insensitive replacement with word boundaries
+      // Use \b for word boundaries to avoid partial matches
+      const regex = new RegExp(`\\b${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi')
+      result = result.replace(regex, emoji)
+    }
+
+    return result
   }
 
   /**
