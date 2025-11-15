@@ -33,7 +33,13 @@ AI-powered dictation app for macOS. Records audio via global shortcuts, transcri
    npm run setup:llama
    ```
 
-3. **Run the app**
+3. **Setup Sounds**
+
+   ```bash
+   npm run setup:sounds
+   ```
+
+4. **Run the app**
    ```bash
    npm run electron:dev
    ```
@@ -51,8 +57,8 @@ On first launch, Romo will guide you through a quick onboarding process:
 ### Daily Use
 
 1. **Launch**: App shows as tiny pill at bottom center of screen
-2. **Record**: Press `Cmd+Shift+D` to start recording (pill expands)
-3. **Stop**: Press `Cmd+Shift+D` again to stop, transcribe, and refine
+2. **Record**: Press `Option + Space` to start recording (pill expands)
+3. **Stop**: Press `Option + Space` again to stop, transcribe, and refine
 4. **Auto-paste**: Refined text automatically pastes to focused app
 5. **Tray**: Access settings and controls from menu bar icon
 
@@ -82,6 +88,7 @@ Creates DMG installer in `release/` directory with all dependencies included.
 To avoid "unverified developer" warnings, you need to code sign your app:
 
 #### Option 1: Apple Developer Certificate (Recommended)
+
 1. **Get Apple Developer Account** ($99/year)
 2. **Create certificates** in Keychain Access:
    - Developer ID Application
@@ -96,6 +103,7 @@ To avoid "unverified developer" warnings, you need to code sign your app:
    ```
 
 #### Option 2: Self-Signed Certificate (Testing)
+
 1. **Create certificate in Keychain Access**:
    - Keychain Access → Certificate Assistant → Create Certificate
    - Name: "Romo Developer"
@@ -107,8 +115,10 @@ To avoid "unverified developer" warnings, you need to code sign your app:
    ```
 
 #### Option 3: No Code Signing (Users must bypass warning)
+
 Users can install by:
-- Right-click app → "Open" → "Open" 
+
+- Right-click app → "Open" → "Open"
 - Or run: `xattr -d com.apple.quarantine /Applications/Romo.app`
 
 ### Release & Auto-Updates
@@ -130,7 +140,7 @@ Users with existing installations will auto-update automatically!
 
 ## Shortcuts
 
-- `Cmd+Shift+D` - Start/stop recording
+- `Option + Space` - Start/stop recording
 - `Cmd+Shift+C` - Copy last transcription
 - `Cmd+Shift+H` - Show/hide app
 

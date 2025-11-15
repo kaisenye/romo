@@ -61,10 +61,10 @@ export default function AuthWindow() {
 
           {status === 'idle' && (
             <>
-              <p className="text-neutral-400 text-sm mb-8">Sign in to continue</p>
+              <p className="text-neutral-600 text-sm mb-8">Sign in to continue</p>
               <button
                 onClick={handleSignIn}
-                className="w-full py-3 px-6 rounded-lg bg-white text-black font-medium hover:bg-neutral-100 transition-colors"
+                className="w-fit mx-auto py-2 px-12 rounded-lg bg-neutral-800 text-neutral-200 font-medium hover:bg-neutral-900 transition-colors"
               >
                 Sign In
               </button>

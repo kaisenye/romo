@@ -26,10 +26,10 @@ class AuthWindowManager extends EventEmitter {
     console.log('Creating auth window...')
 
     this.window = new BrowserWindow({
-      width: 500,
-      height: 600,
-      minWidth: 500,
-      minHeight: 600,
+      width: 400,
+      height: 400,
+      minWidth: 400,
+      minHeight: 400,
       center: true,
       resizable: true, // Allow resizing
       maximizable: true, // Allow maximize
