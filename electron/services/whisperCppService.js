@@ -51,15 +51,16 @@ class WhisperCppService extends BaseAIService {
     this.ensureInitialized('processAudioFile')
 
     try {
-      const { language = 'auto' } = options
+      const { language = 'auto', style } = options
 
       const result = await this.runWhisperCpp(audioFilePath, {
         language: language === 'auto' ? undefined : language, // Let Whisper auto-detect if 'auto'
+        style: style, // Pass style for prompt
         threads: 4,
         bestOf: 5, // Higher quality for file processing
       })
 
-      return this.formatResult(result)
+      return this.formatResult(result, { style })
     } catch (error) {
       this.handleError('processAudioFile', error)
       throw error
@@ -74,10 +75,10 @@ class WhisperCppService extends BaseAIService {
     this.ensureInitialized('processAudioChunk')
 
     const requestId = this.getNextRequestId()
-    const { language = 'auto' } = options
+    const { language = 'auto', style } = options
 
     try {
-      console.log(`Processing audio chunk ${requestId} (language: ${language})`)
+      console.log(`Processing audio chunk ${requestId} (language: ${language}, style: ${style || 'default'})`)
 
       // Validate audio buffer
       if (!audioBuffer || audioBuffer.length === 0) {
@@ -97,6 +98,7 @@ class WhisperCppService extends BaseAIService {
       const result = await this.runWhisperCpp(tempFile, {
         outputFormat: 'json',
         language: language === 'auto' ? undefined : language, // Let Whisper auto-detect if 'auto'
+        style: style, // Pass style for prompt
         threads: 4,
       })
 
@@ -104,7 +106,7 @@ class WhisperCppService extends BaseAIService {
       await fs.unlink(tempFile).catch(() => {}) // Ignore cleanup errors
 
       console.log(`Chunk ${requestId} processed successfully:`, result)
-      return this.formatResult(result)
+      return this.formatResult(result, { style })
     } catch (error) {
       console.error(`Error processing audio chunk ${requestId}:`, error)
 
@@ -173,9 +175,22 @@ class WhisperCppService extends BaseAIService {
         args.push('-l', whisperLang)
       }
 
-      // Add initial prompt to guide output (especially for Chinese variants)
-      if (options.language && AI_MODELS.WHISPER.LANGUAGE_PROMPTS[options.language]) {
-        const prompt = AI_MODELS.WHISPER.LANGUAGE_PROMPTS[options.language]
+      // Add initial prompt to guide output
+      // Priority: custom prompt > style prompt > language prompt
+      let prompt = null
+
+      if (options.prompt) {
+        // Custom prompt takes highest priority
+        prompt = options.prompt
+      } else if (options.style && AI_MODELS.WHISPER.STYLE_PROMPTS && AI_MODELS.WHISPER.STYLE_PROMPTS[options.style]) {
+        // Use style prompt if provided
+        prompt = AI_MODELS.WHISPER.STYLE_PROMPTS[options.style]
+      } else if (options.language && AI_MODELS.WHISPER.LANGUAGE_PROMPTS[options.language]) {
+        // Fall back to language prompt
+        prompt = AI_MODELS.WHISPER.LANGUAGE_PROMPTS[options.language]
+      }
+
+      if (prompt) {
         args.push('--prompt', prompt)
       }
 
@@ -369,9 +384,9 @@ class WhisperCppService extends BaseAIService {
 
   /**
    * Format result to match the expected format
-   * Enhanced with emoji replacement
+   * Enhanced with emoji replacement and style-based post-processing
    */
-  formatResult(whisperResult) {
+  formatResult(whisperResult, options = {}) {
     console.log('Formatting Whisper.cpp result:', whisperResult)
 
     let text = ''
@@ -416,19 +431,68 @@ class WhisperCppService extends BaseAIService {
     // Replace emoji mentions with actual emojis
     text = this.replaceEmojiMentions(text)
 
-    // Also replace emoji mentions in segments
-    segments = segments.map((segment) => ({
-      ...segment,
-      text: this.replaceEmojiMentions(segment.text),
-    }))
+    // Apply style-based post-processing
+    const style = options.style
+    if (style === 'email') {
+      // Convert markdown-style formatting to email format with line breaks
+      text = this.convertMarkdownToEmail(text)
+    }
 
-    console.log('Formatted result:', { text, segments: segments.length })
+    // Also replace emoji mentions in segments and apply style formatting
+    segments = segments.map((segment) => {
+      let segmentText = this.replaceEmojiMentions(segment.text)
+      if (style === 'email') {
+        segmentText = this.convertMarkdownToEmail(segmentText)
+      }
+      return {
+        ...segment,
+        text: segmentText,
+      }
+    })
+
+    console.log('Formatted result:', { text, segments: segments.length, style })
 
     return {
       text: text,
       segments: segments,
       language: whisperResult.language || 'en',
     }
+  }
+
+  /**
+   * Convert plain text to email format with proper line breaks
+   * Adds line breaks after sentences and before common email patterns
+   */
+  convertMarkdownToEmail(text) {
+    if (!text || typeof text !== 'string') return text
+
+    let result = text
+
+    // Add line breaks after sentences (period, exclamation, question mark)
+    // Pattern: sentence. Next sentence -> sentence.\n\nNext sentence
+    result = result.replace(/([.!?])\s+([A-Z])/g, '$1\n\n$2')
+
+    // Add line break before common email closings (if not already there)
+    const closings = ['Best regards', 'Sincerely', 'Thank you', 'Regards', 'Yours truly']
+    closings.forEach((closing) => {
+      const regex = new RegExp(`(\\S)\\s+${closing}`, 'gi')
+      result = result.replace(regex, `$1\n\n${closing}`)
+    })
+
+    // Add line break after common greetings (if followed by content)
+    const greetings = ['Dear', 'Hello', 'Hi', 'Greetings']
+    greetings.forEach((greeting) => {
+      const regex = new RegExp(`${greeting}\\s+([^,\\n]+),\\s+([A-Z])`, 'gi')
+      result = result.replace(regex, `${greeting} $1,\n\n$2`)
+    })
+
+    // Clean up multiple consecutive line breaks (more than 2)
+    result = result.replace(/\n{3,}/g, '\n\n')
+
+    // Clean up: remove leading/trailing whitespace but preserve intentional breaks
+    result = result.trim()
+
+    return result
   }
 
   /**

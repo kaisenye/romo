@@ -92,6 +92,59 @@ const AI_MODELS = {
       zh: '以下是普通话的句子。', // Simplified Chinese prompt
       'zh-TW': '以下是國語的句子。', // Traditional Chinese prompt
     },
+    // Transcription style prompts
+    // Note: Whisper learns by example, not instruction. Provide sample text that demonstrates the desired style.
+    // For email: Use formal greeting/closing pattern. Post-processing will add line breaks after sentences.
+    STYLE_PROMPTS: {
+      email:
+        'Dear Team, I hope this message finds you well. I wanted to follow up on our previous discussion. Please review the proposal and schedule a meeting. Best regards,',
+      'text-message':
+        'hey whats up just checking in about that thing we talked about earlier let me know when you get a chance',
+    },
+    DEFAULT_STYLE: 'email',
+    // Context-to-style mapping for automatic style detection
+    CONTEXT_STYLE_MAP: {
+      // Map by application name
+      apps: {
+        Mail: 'email',
+        'Microsoft Outlook': 'email',
+        'Apple Mail': 'email',
+        Messages: 'text-message',
+        WhatsApp: 'text-message',
+        Telegram: 'text-message',
+        Slack: 'text-message',
+        Discord: 'text-message',
+        'Microsoft Teams': 'text-message',
+      },
+      // Map by browser domain
+      domains: {
+        'gmail.com': 'email',
+        'outlook.com': 'email',
+        'outlook.live.com': 'email',
+        'mail.google.com': 'email',
+        'mail.yahoo.com': 'email',
+        'icloud.com': 'email',
+        'protonmail.com': 'email',
+        'slack.com': 'text-message',
+        'discord.com': 'text-message',
+        'teams.microsoft.com': 'text-message',
+        'web.whatsapp.com': 'text-message',
+        'web.telegram.org': 'text-message',
+        'twitter.com': 'text-message',
+        'x.com': 'text-message',
+        'facebook.com': 'text-message',
+        'messenger.com': 'text-message',
+      },
+      // Map by window title patterns (case-insensitive matching)
+      windowPatterns: {
+        compose: 'email',
+        'new message': 'email',
+        reply: 'email',
+        forward: 'email',
+        draft: 'email',
+      },
+      default: 'email',
+    },
   },
   LLAMA: {
     PREFERRED_MODELS: [

@@ -288,6 +288,7 @@ const useAudioRecording = (options = {}) => {
         const transcriptStartTime = Date.now() // Track processing start time
 
         // Get selected language from store (read fresh every time)
+        // Style is now auto-detected in main process based on active context
         const selectedLanguage = window.useDictationStore
           ? window.useDictationStore.getState().selectedLanguage
           : 'auto'

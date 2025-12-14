@@ -18,6 +18,7 @@ const useDictationStore = create((set) => ({
     claude: '',
   },
   selectedLanguage: 'auto', // Whisper transcription language (default: auto-detect)
+  transcriptionStyle: 'email', // Transcription style: 'email' or 'text-message'
 
   // Dictation History
   dictationHistory: [],
@@ -104,6 +105,29 @@ const useDictationStore = create((set) => ({
       }
     }
     return 'auto'
+  },
+
+  updateTranscriptionStyle: async (style) => {
+    set({ transcriptionStyle: style })
+    // Persist to Electron settings
+    if (window.electronAPI && window.electronAPI.setSetting) {
+      await window.electronAPI.setSetting('transcriptionStyle', style)
+    }
+  },
+
+  // Load persisted transcription style from Electron settings
+  loadTranscriptionStyle: async () => {
+    if (window.electronAPI && window.electronAPI.getSetting) {
+      try {
+        const savedStyle = await window.electronAPI.getSetting('transcriptionStyle', 'email')
+        set({ transcriptionStyle: savedStyle })
+        return savedStyle
+      } catch (error) {
+        console.error('Failed to load transcription style setting:', error)
+        return 'email'
+      }
+    }
+    return 'email'
   },
 
   reset: () => {

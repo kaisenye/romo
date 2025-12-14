@@ -5,6 +5,7 @@ const { TIMEOUTS } = require('../utils/Constants.js')
 const ErrorUtils = require('../utils/ErrorUtils.js')
 const dictationHistoryService = require('../services/DictationHistoryService.js')
 const screenCaptureService = require('../services/ScreenCaptureService.js')
+const contextDetectionService = require('../services/ContextDetectionService.js')
 
 /**
  * IPCRouter - Extracted from main.js
@@ -136,7 +137,26 @@ class IPCRouter {
 
     ipcMain.handle('ai-process-chunk', async (event, audioBuffer, sampleRate, options = {}) => {
       try {
-        const result = await this.whisperService.processAudioChunk(audioBuffer, sampleRate, options)
+        // Detect active context and map to style
+        const { AI_MODELS } = require('../utils/Constants')
+        let detectedStyle = AI_MODELS.WHISPER.DEFAULT_STYLE
+
+        try {
+          const context = await contextDetectionService.detectActiveContext()
+          if (context.success) {
+            detectedStyle = this.mapContextToStyle(context, AI_MODELS.WHISPER.CONTEXT_STYLE_MAP)
+          }
+        } catch {
+          // Fall back to default style on error
+        }
+
+        // Merge detected style into options
+        const optionsWithStyle = {
+          ...options,
+          style: detectedStyle,
+        }
+
+        const result = await this.whisperService.processAudioChunk(audioBuffer, sampleRate, optionsWithStyle)
         return { success: true, result }
       } catch (error) {
         console.error('Failed to process audio chunk:', error)
@@ -316,7 +336,57 @@ class IPCRouter {
       }, 'set setting')
     )
 
+    // Context detection handler
+    ipcMain.handle('detect-active-context', async () => {
+      try {
+        const context = await contextDetectionService.detectActiveContext()
+        return context
+      } catch (error) {
+        return {
+          success: false,
+          error: error.message,
+          appName: null,
+          windowTitle: null,
+          browserType: null,
+          url: null,
+          domain: null,
+          isBrowser: false,
+        }
+      }
+    })
+
     console.log('IPC handlers registered successfully')
+  }
+
+  /**
+   * Map detected context to transcription style
+   * @param {Object} context - Detected context object
+   * @param {Object} styleMap - CONTEXT_STYLE_MAP configuration
+   * @returns {string} Style name (e.g., 'email', 'text-message')
+   */
+  mapContextToStyle(context, styleMap) {
+    // Check domain first (most specific)
+    if (context.domain && styleMap.domains[context.domain]) {
+      return styleMap.domains[context.domain]
+    }
+
+    // Check app name
+    if (context.appName && styleMap.apps[context.appName]) {
+      return styleMap.apps[context.appName]
+    }
+
+    // Check window title patterns
+    if (context.windowTitle) {
+      const lowerTitle = context.windowTitle.toLowerCase()
+      for (const [pattern, style] of Object.entries(styleMap.windowPatterns)) {
+        if (lowerTitle.includes(pattern.toLowerCase())) {
+          return style
+        }
+      }
+    }
+
+    // Default fallback
+    return styleMap.default
   }
 
   /**

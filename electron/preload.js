@@ -73,6 +73,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setSetting: (key, value) => ipcRenderer.invoke('set-setting', key, value),
   onSettingChanged: (callback) => ipcRenderer.on('setting-changed', (event, key, value) => callback(key, value)),
 
+  // Context detection operations
+  detectActiveContext: () => ipcRenderer.invoke('detect-active-context'),
+
   // Onboarding operations
   checkOnboardingStatus: () => ipcRenderer.invoke('check-onboarding-status'),
   completeOnboarding: () => ipcRenderer.invoke('complete-onboarding'),
