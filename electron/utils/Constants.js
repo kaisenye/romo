@@ -228,8 +228,8 @@ const SUPABASE_CONFIG = {
 
 // Auth Configuration
 const AUTH_CONFIG = {
-  WEB_LOGIN_URL: process.env.WEB_LOGIN_URL || 'http://localhost:3000/auth/sign-in?source=desktop',
-  WEB_DASHBOARD_URL: process.env.WEB_DASHBOARD_URL || 'http://localhost:3000/dashboard',
+  WEB_LOGIN_URL: process.env.WEB_LOGIN_URL || 'http://tryromo.com/auth/sign-in?source=desktop',
+  WEB_DASHBOARD_URL: process.env.WEB_DASHBOARD_URL || 'http://tryromo.com/dashboard',
   PROTOCOL_SCHEME: 'romo',
 }
 

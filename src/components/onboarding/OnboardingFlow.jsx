@@ -12,9 +12,6 @@ const STEPS = {
 const OnboardingFlow = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(STEPS.WELCOME)
 
-  // Check if in dev mode (localhost)
-  const isDevMode = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-
   const handleNext = () => {
     if (currentStep === STEPS.SHORTCUTS) {
       handleComplete()
@@ -30,20 +27,14 @@ const OnboardingFlow = ({ onComplete }) => {
   }
 
   const handleComplete = async () => {
-    // Mark onboarding as complete (only if not in persistent dev mode)
-    if (window.electronAPI?.completeOnboarding && !isDevMode) {
+    // Mark onboarding as complete
+    if (window.electronAPI?.completeOnboarding) {
       await window.electronAPI.completeOnboarding()
     }
 
-    // In dev mode, just reset to first step instead of closing
-    if (isDevMode) {
-      console.log('Dev mode: Resetting to first step instead of closing')
-      setCurrentStep(STEPS.WELCOME)
-    } else {
-      // Call the onComplete callback (closes window)
-      if (onComplete) {
-        onComplete()
-      }
+    // Always call the onComplete callback (closes window and opens main app)
+    if (onComplete) {
+      onComplete()
     }
   }
 
@@ -67,7 +58,7 @@ const OnboardingFlow = ({ onComplete }) => {
       </div>
 
       {/* Skip button */}
-      {currentStep !== STEPS.WELCOME && !isDevMode && (
+      {currentStep !== STEPS.WELCOME && (
         <div className="pb-6 text-center">
           <button onClick={handleComplete} className="text-sm text-gray-500 hover:text-gray-400 transition-colors">
             Skip for now

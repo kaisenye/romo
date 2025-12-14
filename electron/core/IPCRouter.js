@@ -1,4 +1,5 @@
 const { ipcMain, Notification } = require('electron')
+const { URLSearchParams } = require('url')
 const fs = require('fs').promises
 const { TIMEOUTS } = require('../utils/Constants.js')
 const ErrorUtils = require('../utils/ErrorUtils.js')
@@ -437,6 +438,7 @@ class IPCRouter {
   registerAuthHandlers() {
     const supabaseAuthService = require('../services/SupabaseAuthService')
     const userSubscriptionService = require('../services/UserSubscriptionService')
+    const devAuthServer = require('../services/DevAuthServer')
     const { AUTH_CONFIG } = require('../utils/Constants')
     const { shell } = require('electron')
 
@@ -488,11 +490,67 @@ class IPCRouter {
     )
 
     // Open web login in browser
-    ipcMain.handle('auth-open-web-login', () => {
-      const loginUrl = AUTH_CONFIG.WEB_LOGIN_URL
-      console.log('Opening web login:', loginUrl)
-      shell.openExternal(loginUrl)
-      return { success: true }
+    ipcMain.handle('auth-open-web-login', async () => {
+      try {
+        // Start DevAuthServer if not already running (for dev mode callback)
+        const isDev = process.env.IS_DEV === 'true'
+        let callbackUrl = null
+
+        if (isDev) {
+          if (!devAuthServer.isRunning()) {
+            console.log('[IPCRouter] Starting DevAuthServer for callback...')
+
+            // Start server with callback handler
+            await devAuthServer.start(async (hashedToken, email) => {
+              console.log('[IPCRouter] DevAuthServer callback received:', { email, hasToken: !!hashedToken })
+
+              try {
+                // Verify token and create session
+                const session = await supabaseAuthService.verifyHashedToken(hashedToken, email)
+
+                if (session) {
+                  // Notify all windows of auth state change
+                  const mainWindow = this.windowManager?.getWindow()
+                  if (mainWindow) {
+                    mainWindow.webContents.send('auth-state-changed', {
+                      user: session.user,
+                      session: session,
+                    })
+                  }
+
+                  // Start auto-refresh
+                  supabaseAuthService.startAutoRefresh()
+
+                  console.log('[IPCRouter] ✅ Authentication successful via DevAuthServer')
+                }
+              } catch (error) {
+                console.error('[IPCRouter] ❌ Error handling DevAuthServer callback:', error)
+              }
+            })
+          }
+
+          callbackUrl = devAuthServer.getCallbackUrl()
+          console.log('[IPCRouter] DevAuthServer callback URL:', callbackUrl)
+        }
+
+        // Build login URL with callback parameter
+        const loginUrlParams = new URLSearchParams()
+        loginUrlParams.set('source', 'desktop')
+        if (callbackUrl) {
+          loginUrlParams.set('callback', callbackUrl)
+        }
+
+        const loginUrl = `${AUTH_CONFIG.WEB_LOGIN_URL}${AUTH_CONFIG.WEB_LOGIN_URL.includes('?') ? '&' : '?'}${loginUrlParams.toString()}`
+
+        console.log('[IPCRouter] Opening web login:', loginUrl)
+        shell.openExternal(loginUrl)
+        return { success: true }
+      } catch (error) {
+        console.error('[IPCRouter] Error opening web login:', error)
+        // Fallback to basic login URL
+        shell.openExternal(AUTH_CONFIG.WEB_LOGIN_URL)
+        return { success: false, error: error.message }
+      }
     })
 
     // Open web dashboard in browser

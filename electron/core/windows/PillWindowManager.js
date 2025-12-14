@@ -126,8 +126,8 @@ class PillWindowManager {
     // Load the app
     if (isDev) {
       this.mainWindow.loadURL(APP_CONFIG.DEV_SERVER_URL) // Was: 'http://localhost:5173'
-      // Enable dev tools in development for debugging
-      this.mainWindow.webContents.openDevTools()
+      // Dev tools can be opened manually via View menu if needed
+      // this.mainWindow.webContents.openDevTools()
     } else {
       const filePath = path.join(app.getAppPath(), 'dist', 'index.html')
       console.log('Loading file from:', filePath)
