@@ -104,13 +104,8 @@ class TrayManager {
     this.tray.setContextMenu(contextMenu)
     this.tray.setToolTip(APP_CONFIG.NAME) // Was: 'Romo'
 
-    // Handle tray icon click - always show app
-    this.tray.on('click', async () => {
-      const mainWindow = this.windowManager.getWindow()
-      if (mainWindow) {
-        await this.windowManager.showWindowOnCurrentDesktop()
-      }
-    })
+    // Tray icon click disabled - users should use context menu or keyboard shortcuts
+    // Clicking tray icon no longer opens the pill window
 
     console.log('Tray created successfully')
   }

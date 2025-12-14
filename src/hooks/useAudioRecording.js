@@ -41,7 +41,8 @@ const useAudioRecording = (options = {}) => {
       const rms = Math.sqrt(sum / dataArray.length)
 
       // Apply logarithmic scaling and amplification for better visibility
-      const level = Math.min(1, rms * 5) // Amplify by 5x and cap at 1
+      // Increased amplification for bigger wave fluctuations (was 5x, now 8x)
+      const level = Math.min(1, rms * 8) // Amplify by 8x and cap at 1
       setAudioLevel(level)
 
       animationFrameRef.current = requestAnimationFrame(updateAudioLevel)
