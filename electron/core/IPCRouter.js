@@ -145,6 +145,7 @@ class IPCRouter {
           const context = await contextDetectionService.detectActiveContext()
           if (context.success) {
             detectedStyle = this.mapContextToStyle(context, AI_MODELS.WHISPER.CONTEXT_STYLE_MAP)
+            console.log(`[Detection] Style: ${detectedStyle}`)
           }
         } catch {
           // Fall back to default style on error

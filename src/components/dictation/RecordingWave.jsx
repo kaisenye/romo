@@ -46,7 +46,7 @@ const RecordingWave = ({ audioLevel = 0, isAgentMode = false }) => {
           className={`w-0.5 rounded-full ${barColor} transition-all duration-100 ease-out`}
           style={{
             height: `${getBarHeight(index) * 10}px`, // Max 25px height (2.5 * 10) for bigger fluctuations
-            opacity: Math.max(0.7, audioLevel * 1.5),
+            opacity: 1, // Always full opacity - color is white/lime, height shows audio level
           }}
         />
       ))}

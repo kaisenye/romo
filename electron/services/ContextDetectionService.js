@@ -64,6 +64,13 @@ class ContextDetectionService {
         isBrowser,
       }
 
+      // Log detection result
+      if (isBrowser && domain) {
+        console.log(`[Detection] Detected: ${appName} - ${domain}`)
+      } else if (appName) {
+        console.log(`[Detection] Detected: ${appName}`)
+      }
+
       return context
     } catch (error) {
       return {
@@ -91,6 +98,9 @@ class ContextDetectionService {
         .toString()
         .trim()
 
+      if (appName) {
+        console.log(`[Detection] App: ${appName}`)
+      }
       return appName
     } catch {
       return null
@@ -147,6 +157,9 @@ class ContextDetectionService {
         try {
           const urlObj = new URL(url)
           domain = urlObj.hostname.replace('www.', '')
+          if (domain) {
+            console.log(`[Detection] Tab: ${domain}`)
+          }
         } catch {
           // Ignore parse errors
         }
