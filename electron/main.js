@@ -1,5 +1,13 @@
 // Load environment variables from .env file BEFORE any other imports
-require('dotenv').config()
+// Determine environment: development if IS_DEV is set or NODE_ENV is development
+const envMode = process.env.IS_DEV === 'true' || process.env.NODE_ENV === 'development'
+const envFile = envMode ? '.env.development' : '.env.production'
+
+// Try to load environment-specific file, fallback to .env if not found
+require('dotenv').config({ path: envFile })
+
+// Also load base .env if it exists (for shared variables)
+require('dotenv').config({ override: false })
 
 const { app, BrowserWindow, Menu } = require('electron')
 const path = require('path')

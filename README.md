@@ -26,20 +26,34 @@ AI-powered dictation app for macOS. Records audio via global shortcuts, transcri
    npm install
    ```
 
-2. **Setup AI services**
+2. **Setup environment variables**
+
+   Create environment-specific files:
+   - **Development**: Copy `.env.development.example` to `.env.development` and fill in your values
+   - **Production**: Copy `.env.production.example` to `.env.production` and fill in your values
+
+   Required variables:
+   - `SUPABASE_URL` - Your Supabase project URL
+   - `SUPABASE_ANON_KEY` - Your Supabase anonymous key
+   - `WEB_LOGIN_URL` - Web login URL (defaults provided)
+   - `WEB_DASHBOARD_URL` - Web dashboard URL (defaults provided)
+
+   The app automatically loads `.env.development` in dev mode and `.env.production` in production builds.
+
+3. **Setup AI services**
 
    ```bash
    npm run setup:whisper
    npm run setup:llama
    ```
 
-3. **Setup Sounds**
+4. **Setup Sounds**
 
    ```bash
    npm run setup:sounds
    ```
 
-4. **Run the app**
+5. **Run the app**
    ```bash
    npm run electron:dev
    ```
