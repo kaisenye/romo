@@ -39,13 +39,13 @@ const OnboardingFlow = ({ onComplete }) => {
   }
 
   return (
-    <div className="w-full h-screen bg-gray-900 to-black flex flex-col rounded-3xl overflow-hidden">
+    <div className="w-full h-screen bg-gray-50 flex flex-col rounded-3xl overflow-hidden">
       {/* Progress indicator - draggable area for window movement */}
       <div className="flex items-center justify-center gap-2 pt-8 pb-4" style={{ WebkitAppRegion: 'drag' }}>
         {[STEPS.WELCOME, STEPS.PERMISSIONS, STEPS.SHORTCUTS].map((step) => (
           <div
             key={step}
-            className={`h-1 w-16 rounded-full transition-all ${step <= currentStep ? 'bg-white' : 'bg-gray-700'}`}
+            className={`h-1 w-16 rounded-full transition-all ${step <= currentStep ? 'bg-gray-900' : 'bg-gray-300'}`}
           />
         ))}
       </div>
@@ -60,7 +60,7 @@ const OnboardingFlow = ({ onComplete }) => {
       {/* Skip button */}
       {currentStep !== STEPS.WELCOME && (
         <div className="pb-6 text-center">
-          <button onClick={handleComplete} className="text-sm text-gray-500 hover:text-gray-400 transition-colors">
+          <button onClick={handleComplete} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
             Skip for now
           </button>
         </div>
