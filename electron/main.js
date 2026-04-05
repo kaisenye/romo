@@ -225,8 +225,13 @@ app.whenReady().then(async () => {
     console.log('Checking authentication status...')
     const session = await supabaseAuthService.getSession()
     const isAuthenticated = !!session
+    const skipAuthDev = isDev && process.env.VITE_SKIP_AUTH === 'true'
+    if (skipAuthDev) {
+      console.log('VITE_SKIP_AUTH=true: skipping auth gate in dev (no login window)')
+    }
+    const effectiveAuthenticated = isAuthenticated || skipAuthDev
 
-    if (!isAuthenticated) {
+    if (!effectiveAuthenticated) {
       // User not authenticated - show auth window
       authWindowManager.createWindow()
 
@@ -323,6 +328,10 @@ app.whenReady().then(async () => {
           pillWindowManager.createWindow()
         }
       } else if (event === 'SIGNED_OUT') {
+        if (isDev && process.env.VITE_SKIP_AUTH === 'true') {
+          console.log('[Main] VITE_SKIP_AUTH dev: ignoring SIGNED_OUT (no auth window)')
+          return
+        }
         console.log('[Main] User signed out, showing auth window...')
 
         // User signed out

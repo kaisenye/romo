@@ -1,5 +1,14 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 
+/** Dev-only: bypass login when VITE_SKIP_AUTH=true (never active in production builds). */
+const DEV_SKIP_AUTH =
+  import.meta.env.DEV && import.meta.env.VITE_SKIP_AUTH === 'true'
+
+const DEV_SKIP_AUTH_USER = {
+  id: 'dev-skip-auth',
+  email: 'dev@local.skip',
+}
+
 /**
  * Auth Context
  * Provides authentication state and methods throughout the app
@@ -38,6 +47,12 @@ export function AuthProvider({ children }) {
         setLoading(true)
         setError(null)
 
+        if (DEV_SKIP_AUTH) {
+          setUser(DEV_SKIP_AUTH_USER)
+          setLoading(false)
+          return
+        }
+
         // Get current session
         const session = await window.electronAPI.getAuthSession()
         if (session?.user) {
@@ -62,6 +77,7 @@ export function AuthProvider({ children }) {
 
     // Listen for auth state changes from main process
     window.electronAPI.onAuthStateChange((event, data) => {
+      if (DEV_SKIP_AUTH) return
       console.log('Auth state changed:', data)
       setUser(data.user || null)
 
@@ -86,6 +102,10 @@ export function AuthProvider({ children }) {
    * Sign out the current user
    */
   const signOut = async () => {
+    if (DEV_SKIP_AUTH) {
+      console.warn('Dev skip auth: signOut ignored')
+      return
+    }
     try {
       setLoading(true)
       await window.electronAPI.signOut()
@@ -103,6 +123,10 @@ export function AuthProvider({ children }) {
    * Open web browser for login
    */
   const openLogin = () => {
+    if (DEV_SKIP_AUTH) {
+      console.warn('Dev skip auth: openLogin ignored')
+      return
+    }
     window.electronAPI.openWebLogin()
   }
 
